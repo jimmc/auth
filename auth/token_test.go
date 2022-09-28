@@ -4,7 +4,7 @@ import (
   "testing"
   "time"
 
-  "github.com/jimmc/mimsrv/users"
+  "github.com/jimmc/auth/users"
 )
 
 func TestIsValid(t *testing.T) {

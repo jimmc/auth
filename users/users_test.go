@@ -6,7 +6,7 @@ import (
   "os"
   "testing"
 
-  "github.com/jimmc/mimsrv/permissions"
+  "github.com/jimmc/auth/permissions"
 )
 
 func TestEmpty(t *testing.T) {

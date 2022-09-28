@@ -7,7 +7,7 @@ import (
   "log"
   "os"
 
-  "github.com/jimmc/mimsrv/permissions"
+  "github.com/jimmc/auth/permissions"
 )
 
 type User struct {

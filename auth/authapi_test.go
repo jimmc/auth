@@ -5,8 +5,8 @@ import (
   "net/http/httptest"
   "testing"
 
-  "github.com/jimmc/mimsrv/permissions"
-  "github.com/jimmc/mimsrv/users"
+  "github.com/jimmc/auth/permissions"
+  "github.com/jimmc/auth/users"
 )
 
 func TestRequireAuth(t *testing.T) {

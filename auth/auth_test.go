@@ -10,13 +10,13 @@ import (
 var (
   testConfig = &Config{
     Prefix: "/pre/",
-    PasswordFilePath: "/tmp/mimsrv-passwd-test.txt",
+    PasswordFilePath: "/tmp/auth-passwd-test.txt",
     MaxClockSkewSeconds: 2,
   }
 )
 
 func TestPasswordFile(t *testing.T) {
-  pf, err := ioutil.TempFile("", "mimsrv-test")
+  pf, err := ioutil.TempFile("", "auth-test")
   if err != nil {
     t.Fatalf("failed to create temp password file")
   }

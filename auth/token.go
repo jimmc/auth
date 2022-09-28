@@ -5,7 +5,7 @@ import (
   "math/rand"
   "time"
 
-  "github.com/jimmc/mimsrv/users"
+  "github.com/jimmc/auth/users"
 )
 
 const (

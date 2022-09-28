@@ -22,7 +22,7 @@ import (
   "time"
 
   "golang.org/x/crypto/ssh/terminal"
-  "github.com/jimmc/mimsrv/users"
+  "github.com/jimmc/auth/users"
 )
 
 var (

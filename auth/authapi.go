@@ -9,12 +9,12 @@ import (
   "strconv"
   "time"
 
-  "github.com/jimmc/mimsrv/permissions"
-  "github.com/jimmc/mimsrv/users"
+  "github.com/jimmc/auth/permissions"
+  "github.com/jimmc/auth/users"
 )
 
 const (
-  tokenCookieName = "MIMSRV_TOKEN"
+  tokenCookieName = "AUTH_TOKEN"        // TODO - make this a config value
 )
 
 type LoginStatus struct {
