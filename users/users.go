@@ -16,7 +16,7 @@ type User struct {
   perms *permissions.Permissions
 }
 
-type Users struct {
+type Users struct {     // TODO - split user and users into separate files?
   records [][]string
   users map[string]*User
 }
@@ -28,7 +28,7 @@ func Empty() *Users {
   }
 }
 
-func LoadFile(filename string) (*Users, error) {
+func LoadFile(filename string) (*Users, error) {        // TODO - generalize to allow use with an SQL database
   f, err := os.Open(filename)
   if err != nil {
     return nil, fmt.Errorf("error opening password file %s: %v", filename, err)

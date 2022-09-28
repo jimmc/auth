@@ -13,10 +13,6 @@ import (
   "github.com/jimmc/auth/users"
 )
 
-const (
-  tokenCookieName = "AUTH_TOKEN"        // TODO - make this a config value
-)
-
 type LoginStatus struct {
   LoggedIn bool
   Permissions string
@@ -37,14 +33,14 @@ func (h *Handler) initApiHandler() {
 
 func (h *Handler) RequireAuth(httpHandler http.Handler) http.Handler {
   return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
-    tokenKey := cookieValue(r, tokenCookieName)
+    tokenKey := cookieValue(r, h.config.TokenCookieName)
     idstr := clientIdString(r)
     if token, valid := currentToken(tokenKey, idstr); valid {
       token.updateTimeout()
-      http.SetCookie(w, token.cookie()) // Set the renewed cookie
+      http.SetCookie(w, token.cookie(h.config.TokenCookieName)) // Set the renewed cookie
       user := token.User()
-      mimRequest := requestWithContextUser(r, user)
-      httpHandler.ServeHTTP(w, mimRequest)
+      rwcu := requestWithContextUser(r, user)
+      httpHandler.ServeHTTP(w, rwcu)
     } else {
       // No token, or token is not valid
       http.Error(w, "Invalid token", http.StatusUnauthorized)
@@ -53,8 +49,8 @@ func (h *Handler) RequireAuth(httpHandler http.Handler) http.Handler {
 }
 
 func requestWithContextUser(r *http.Request, user *users.User) *http.Request {
-  mimContext := context.WithValue(r.Context(), ctxUserKey, user)
-  return r.WithContext(mimContext)
+  cwv := context.WithValue(r.Context(), ctxUserKey, user)
+  return r.WithContext(cwv)
 }
 
 func CurrentUser(r *http.Request) *users.User {
@@ -91,7 +87,7 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
   if user != nil && h.nonceIsValidNow(userid, nonce, seconds) {
     // OK to log in; generate a bearer token and put in a cookie
     idstr := clientIdString(r)
-    http.SetCookie(w, tokenCookie(user, idstr))
+    http.SetCookie(w, newToken(user, idstr).cookie(h.config.TokenCookieName))
   } else {
     http.Error(w, "Invalid userid or nonce", http.StatusUnauthorized)
     return
@@ -110,25 +106,10 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
   w.Write(b)
 }
 
-func tokenCookie(user *users.User, idstr string) *http.Cookie {
-  token := newToken(user, idstr)
-  return token.cookie()
-}
-
-func (t *Token) cookie() *http.Cookie {
-  return &http.Cookie{
-    Name: tokenCookieName,
-    Path: "/",
-    Value: t.Key,
-    Expires: t.timeout,
-    HttpOnly: true,
-  }
-}
-
 func (h *Handler) logout(w http.ResponseWriter, r *http.Request) {
   // Clear our token cookie
   tokenCookie := &http.Cookie{
-    Name: tokenCookieName,
+    Name: h.config.TokenCookieName,
     Path: "/",
     Value: "",
     Expires: time.Now().AddDate(-1, 0, 0),
@@ -139,7 +120,7 @@ func (h *Handler) logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) status(w http.ResponseWriter, r *http.Request) {
-  tokenKey := cookieValue(r, tokenCookieName)
+  tokenKey := cookieValue(r, h.config.TokenCookieName)
   idstr := clientIdString(r)
   token, loggedIn := currentToken(tokenKey, idstr)
   result := &LoginStatus{
@@ -147,7 +128,7 @@ func (h *Handler) status(w http.ResponseWriter, r *http.Request) {
   }
   if loggedIn {
     token.updateTimeout()
-    http.SetCookie(w, token.cookie()) // Set the renewed cookie
+    http.SetCookie(w, token.cookie(h.config.TokenCookieName)) // Set the renewed cookie
     result.Permissions = token.User().PermissionsString()
   }
 

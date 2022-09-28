@@ -13,7 +13,7 @@ func TestFromString(t *testing.T) {
     t.Errorf("empty string should not give CanEdit permission")
   }
 
-  p = FromString("edit")
+  p = FromString("edit")        // TODO - extract back to mimsrv
   if got, want := len(p.perms), 1; got != want {
     t.Errorf("Number of permissions in 'edit' string: got %d, want %d", got, want)
   }

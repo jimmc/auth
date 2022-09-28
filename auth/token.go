@@ -3,6 +3,7 @@ package auth
 import (
   "fmt"
   "math/rand"
+  "net/http"
   "time"
 
   "github.com/jimmc/auth/users"
@@ -60,7 +61,7 @@ func (t *Token) isValid(idstr string) bool {
   return true
 }
 
-// updateTimeout reset the token timeout to be the timeout-duration
+// updateTimeout resets the token timeout to be the timeout-duration
 // from now, or the token expiry, whichever comes first.
 func (t *Token) updateTimeout() {
   timeout := timeNow().Add(tokenTimeoutDuration)
@@ -72,4 +73,14 @@ func (t *Token) updateTimeout() {
 
 func (t *Token) User() *users.User {
   return t.user
+}
+
+func (t *Token) cookie(tokenCookieName string) *http.Cookie {
+  return &http.Cookie{
+    Name: tokenCookieName,
+    Path: "/",
+    Value: t.Key,
+    Expires: t.timeout,
+    HttpOnly: true,
+  }
 }

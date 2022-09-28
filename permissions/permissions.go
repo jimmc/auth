@@ -6,9 +6,9 @@ import (
 
 const permSepChar = " "
 
-type Permission int
+type Permission int     // TODO - change from int to string
 const (
-  CanEdit Permission = iota +1
+  CanEdit Permission = iota +1          // TODO - extract back to mimsrv
 )
 
 type Permissions struct {
@@ -46,7 +46,7 @@ func (p *Permissions) HasPermission(perm Permission) bool {
 }
 
 func permFromString(s string) Permission {
-  if s == "edit" {
+  if s == "edit" {      // TODO - extract back to mimsrv
     return CanEdit
   }
   return 0      // No valid permission string found
