@@ -10,12 +10,6 @@ import (
   "github.com/jimmc/auth/permissions"
 )
 
-type User struct {
-  userid string
-  cryptword string
-  perms *permissions.Permissions
-}
-
 type Users struct {     // TODO - split user and users into separate files?
   records [][]string
   users map[string]*User
@@ -125,14 +119,6 @@ func (m *Users) addRecord(userid, cryptword string, perms string) {
   m.records = append(m.records, record)
 }
 
-func NewUser(userid, cryptword string, perms *permissions.Permissions) *User {
-  return &User{
-    userid: userid,
-    cryptword: cryptword,
-    perms: perms,
-  }
-}
-
 func (m *Users) User(userid string) *User {
   return m.users[userid]
 }
@@ -170,30 +156,4 @@ func (m *Users) HasPermission(userid string, perm permissions.Permission) bool {
     return false
   }
   return user.HasPermission(perm)
-}
-
-func (u *User) Cryptword() string {
-  return u.cryptword
-}
-
-func (u *User) SetCryptword(cryptword string) {
-  u.cryptword = cryptword
-}
-
-func (u *User) Id() string {
-  return u.userid
-}
-
-func (u *User) HasPermission(perm permissions.Permission) bool {
-  if u.perms == nil {
-    return false
-  }
-  return u.perms.HasPermission(perm)
-}
-
-func (u *User) PermissionsString() string {
-  if u.perms == nil {
-    return ""
-  }
-  return u.perms.ToString()
 }
