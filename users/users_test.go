@@ -9,6 +9,8 @@ import (
   "github.com/jimmc/auth/permissions"
 )
 
+const CanDoSomething permissions.Permission = "something"
+
 func TestEmpty(t *testing.T) {
   m := Empty();
   if got, want := m.UserCount(), 0; got != want {
@@ -36,14 +38,14 @@ func TestLoadSaveFile(t *testing.T) {
     t.Errorf("cryptword for user1: got %s, want %s", got, want)
   }
 
-  perms := permissions.FromString("edit")
+  perms := permissions.FromString("something")
   m.addUser("user3", "cw3", perms)
   m.SetCryptword("user2", "cw2")
-  if got, want := m.HasPermission("user3", permissions.CanEdit), true; got !=want {
-    t.Errorf("edit permission for user3: got %v, want %v", got, want)
+  if got, want := m.HasPermission("user3", CanDoSomething), true; got !=want {
+    t.Errorf("something permission for user3: got %v, want %v", got, want)
   }
-  if got, want := m.HasPermission("user2", permissions.CanEdit), false; got !=want {
-    t.Errorf("edit permission for user2: got %v, want %v", got, want)
+  if got, want := m.HasPermission("user2", CanDoSomething), false; got !=want {
+    t.Errorf("something permission for user2: got %v, want %v", got, want)
   }
 
   pwsavefile := "testdata/tmp-pw-save.txt"

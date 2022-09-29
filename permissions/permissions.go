@@ -6,10 +6,7 @@ import (
 
 const permSepChar = " "
 
-type Permission int     // TODO - change from int to string
-const (
-  CanEdit Permission = iota +1          // TODO - extract back to mimsrv
-)
+type Permission string
 
 type Permissions struct {
   perms map[Permission]bool
@@ -46,15 +43,9 @@ func (p *Permissions) HasPermission(perm Permission) bool {
 }
 
 func permFromString(s string) Permission {
-  if s == "edit" {      // TODO - extract back to mimsrv
-    return CanEdit
-  }
-  return 0      // No valid permission string found
+    return Permission(s)
 }
 
 func permToString(perm Permission) string {
-  if perm == CanEdit {
-    return "edit"
-  }
-  return ""
+    return string(perm)
 }

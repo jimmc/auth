@@ -9,10 +9,13 @@ import (
   "github.com/jimmc/auth/users"
 )
 
+const CanDoSomething permissions.Permission = "something"
+
 func TestRequireAuth(t *testing.T) {
   h := NewHandler(&Config{
     Prefix: "/pre/",
     PasswordFilePath: "testdata/pw1.txt",
+    TokenCookieName: "test_cookie",
     MaxClockSkewSeconds: 2,
   })
 
@@ -36,7 +39,7 @@ func TestRequireAuth(t *testing.T) {
   rr = httptest.NewRecorder()
   user := users.NewUser("user1", "cw1", nil)
   idstr := clientIdString(req)
-  cookie := tokenCookie(user, idstr)
+  cookie := newToken(user, idstr).cookie(h.config.TokenCookieName)
   req.AddCookie(cookie)
   reqUser = nil
   wrappedHandler.ServeHTTP(rr, req)
@@ -49,8 +52,8 @@ func TestRequireAuth(t *testing.T) {
   if got, want := reqUser.Id(), user.Id(); got != want {
     t.Errorf("authenticated userid: got %s, want %s", got, want)
   }
-  if got, want := reqUser.HasPermission(permissions.CanEdit), false; got != want {
-    t.Errorf("permission for CanEdit: got %v, want %v", got, want)
+  if got, want := reqUser.HasPermission(CanDoSomething), false; got != want {
+    t.Errorf("permission for CanDoSomething: got %v, want %v", got, want)
   }
 
   req, err = http.NewRequest("GET", "/api/list/d1", nil)
@@ -58,9 +61,9 @@ func TestRequireAuth(t *testing.T) {
     t.Fatalf("error create auth list request: %v", err)
   }
   rr = httptest.NewRecorder()
-  user = users.NewUser("user1", "cw1", permissions.FromString("edit"))
+  user = users.NewUser("user1", "cw1", permissions.FromString("something"))
   idstr = clientIdString(req)
-  cookie = tokenCookie(user, idstr)
+  cookie = newToken(user, idstr).cookie(h.config.TokenCookieName)
   req.AddCookie(cookie)
   reqUser = nil
   wrappedHandler.ServeHTTP(rr, req)
@@ -70,7 +73,7 @@ func TestRequireAuth(t *testing.T) {
   if reqUser == nil {
     t.Errorf("authenicated request should carry a current user")
   }
-  if got, want := reqUser.HasPermission(permissions.CanEdit), true; got != want {
-    t.Errorf("permission for CanEdit: got %v, want %v", got, want)
+  if got, want := reqUser.HasPermission(CanDoSomething), true; got != want {
+    t.Errorf("permission for CanDoSomething: got %v, want %v", got, want)
   }
 }
