@@ -16,23 +16,24 @@ import (
   "fmt"
   "log"
   "net/http"
-  "os"
   "strconv"
   "syscall"
   "time"
 
   "golang.org/x/crypto/ssh/terminal"
+
+  "github.com/jimmc/auth/store"
   "github.com/jimmc/auth/users"
 )
 
 var (
-  timeNow = time.Now
+  timeNow = time.Now            // Allow overriding for unit testing.
 )
 
 type Config struct {
   Prefix string                 // The prefix string used for our API calls
-  PasswordFilePath string       // Location of our password database file
-  TokenCookieName string        // The name of the cookie we use to store our auth data
+  Store store.Store             // The storage module to load and save our data.
+  TokenCookieName string        // The name of the cookie we use to store our auth data.
   MaxClockSkewSeconds int
 }
 
@@ -44,7 +45,12 @@ type Handler struct {
 
 func NewHandler(c *Config) Handler {
   h := Handler{config: c}
-  err := h.loadPasswordFile()
+  if c.Store==nil {
+    log.Printf("Error: no Store provided")
+    h.users = users.Empty()
+    return h
+  }
+  err := h.loadUsers()
   if err != nil {
     log.Printf("Error loading password file: %v", err)
     h.users = users.Empty()
@@ -52,19 +58,6 @@ func NewHandler(c *Config) Handler {
   h.initApiHandler()
   initTokens()
   return h
-}
-
-func (h *Handler) CreatePasswordFile() error {
-  f, err := os.Open(h.config.PasswordFilePath)
-  if err == nil || !os.IsNotExist(err) {
-    return fmt.Errorf("password file already exists at %s", h.config.PasswordFilePath)
-  }
-  f, err = os.Create(h.config.PasswordFilePath)
-  if err != nil {
-    return fmt.Errorf("error creating new password file at %s: %v", h.config.PasswordFilePath, err)
-  }
-  f.Close()
-  return nil
 }
 
 // Read a password from the terminal and pass it to UpdatePassword.
@@ -94,21 +87,21 @@ func (h *Handler) UpdateUserPassword(userid string) error {
 // plaintext password, we concatenate the userid with the raw password, take
 // the sha256sum of that, and store that in our database.
 func (h *Handler) UpdatePassword(userid, password string) error {
-  err := h.loadPasswordFile()
+  err := h.loadUsers()
   if err != nil {
     return err
   }
   cryptword := h.generateCryptword(userid, password)
   h.setCryptword(userid, cryptword)
-  err = h.savePasswordFile()
+  err = h.saveUsers()
   if err != nil {
     return err
   }
   return nil
 }
 
-func (h *Handler) loadPasswordFile() error {
-  users, err := users.LoadFile(h.config.PasswordFilePath)
+func (h *Handler) loadUsers() error {
+  users, err := h.config.Store.Load()
   if err != nil {
     return err
   }
@@ -116,8 +109,8 @@ func (h *Handler) loadPasswordFile() error {
   return nil
 }
 
-func (h *Handler) savePasswordFile() error {
-  return h.users.SaveFile(h.config.PasswordFilePath)
+func (h *Handler) saveUsers() error {
+  return h.config.Store.Save(h.users)
 }
 
 func (h *Handler) setCryptword(userid, cryptword string) {

@@ -5,12 +5,13 @@ import (
   "os"
   "testing"
   "time"
+
+  "github.com/jimmc/auth/store"
 )
 
 var (
   testConfig = &Config{
     Prefix: "/pre/",
-    PasswordFilePath: "/tmp/auth-passwd-test.txt",
     MaxClockSkewSeconds: 2,
   }
 )
@@ -21,13 +22,14 @@ func TestPasswordFile(t *testing.T) {
     t.Fatalf("failed to create temp password file")
   }
   defer os.Remove(pf.Name())    // clean up
+  pwStore := store.NewPwFile(pf.Name())
   c := &Config{
     Prefix: "/pre/",
-    PasswordFilePath: pf.Name(),
+    Store: pwStore,
     MaxClockSkewSeconds: 2,
   }
   h := NewHandler(c)
-  err = h.loadPasswordFile()
+  err = h.loadUsers()
   if err != nil {
     t.Errorf("failed to load empty password file")
   }
@@ -39,7 +41,7 @@ func TestPasswordFile(t *testing.T) {
     t.Errorf("error closing tmp password file")
   }
 
-  err = h.CreatePasswordFile()
+  err = pwStore.CreatePasswordFile()
   if err == nil {
     t.Errorf("attempting to create existing password file should fail")
   }
@@ -47,7 +49,7 @@ func TestPasswordFile(t *testing.T) {
   if err != nil {
     t.Errorf("failed to remove tmp password file: %v", err)
   }
-  err = h.CreatePasswordFile()
+  err = pwStore.CreatePasswordFile()
   if err != nil {
     t.Errorf("failed to create password file")
   }
@@ -60,7 +62,7 @@ func TestPasswordFile(t *testing.T) {
   if err != nil {
     t.Errorf("failed to update password")
   }
-  err = h.loadPasswordFile()
+  err = h.loadUsers()
   if err != nil {
     t.Errorf("failed to load password file after updating")
   }

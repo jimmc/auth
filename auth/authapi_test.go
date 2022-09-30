@@ -6,15 +6,17 @@ import (
   "testing"
 
   "github.com/jimmc/auth/permissions"
+  "github.com/jimmc/auth/store"
   "github.com/jimmc/auth/users"
 )
 
 const CanDoSomething permissions.Permission = "something"
 
 func TestRequireAuth(t *testing.T) {
+  pf := store.NewPwFile("testdata/pw1.txt")
   h := NewHandler(&Config{
     Prefix: "/pre/",
-    PasswordFilePath: "testdata/pw1.txt",
+    Store: pf,
     TokenCookieName: "test_cookie",
     MaxClockSkewSeconds: 2,
   })
