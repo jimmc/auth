@@ -44,6 +44,7 @@ func (pf *PwFile) Load() (*users.Users, error) {
     return nil, fmt.Errorf("error opening password file %s: %v", pf.Filename, err)
   }
   r := csv.NewReader(bufio.NewReader(f))
+  r.FieldsPerRecord = 3         // userid, password, permissions
 
   records, err := r.ReadAll()
   if err != nil {
@@ -51,22 +52,7 @@ func (pf *PwFile) Load() (*users.Users, error) {
   }
 
   uu := pf.recordsToUsers(records)
-  return users.NewUsers(records, uu), nil
-}
-
-func (pf *PwFile) recordsToUsers(records [][]string) map[string]*users.User {
-  uu := make(map[string]*users.User)
-  for _, record := range records {
-    userid := record[0]
-    cryptword := record[1]
-    var perms *permissions.Permissions
-    if len(record) > 2 {
-      perms = permissions.FromString(record[2])
-    }
-    user := users.NewUser(userid, cryptword, perms)
-    uu[userid] = user
-  }
-  return uu
+  return users.NewUsers(uu), nil
 }
 
 func (pf *PwFile) Save(uu *users.Users) error {
@@ -76,7 +62,7 @@ func (pf *PwFile) Save(uu *users.Users) error {
     return fmt.Errorf("error creating new password file %s: %v", newFilePath, err)
   }
   w := csv.NewWriter(bufio.NewWriter(f))
-  err = w.WriteAll(uu.Records())
+  err = w.WriteAll(pf.usersToRecords(uu))
   if err != nil {
     return fmt.Errorf("error writing new password file %s: %v", newFilePath, err)
   }
@@ -94,4 +80,26 @@ func (pf *PwFile) Save(uu *users.Users) error {
   }
 
   return nil
+}
+
+func (pf *PwFile) recordsToUsers(records [][]string) map[string]*users.User {
+  uu := make(map[string]*users.User)
+  for _, record := range records {
+    userid := record[0]
+    cryptword := record[1]
+    perms := permissions.FromString(record[2])
+    user := users.NewUser(userid, cryptword, perms)
+    uu[userid] = user
+  }
+  return uu
+}
+
+func (pf *PwFile) usersToRecords(uu *users.Users) [][]string {
+  count := uu.UserCount()
+  records := make([][]string, count, count)
+  ua := uu.ToArray()
+  for n, u := range ua {
+    records[n] = []string{ u.Id(), u.Cryptword(), u.PermissionsString() }
+  }
+  return records
 }

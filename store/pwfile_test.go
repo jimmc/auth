@@ -30,6 +30,7 @@ func TestLoadSaveFile(t *testing.T) {
   perms := permissions.FromString("something")
   m.AddUser("user3", "cw3", perms)
   m.SetCryptword("user2", "cw2")
+
   if got, want := m.HasPermission("user3", CanDoSomething), true; got !=want {
     t.Errorf("something permission for user3: got %v, want %v", got, want)
   }
