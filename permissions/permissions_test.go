@@ -5,6 +5,7 @@ import (
 )
 
 const (
+    CanDoAnything Permission = "anything"
     CanDoSomething Permission = "something"
 )
 
@@ -23,5 +24,12 @@ func TestFromString(t *testing.T) {
   }
   if !p.HasPermission(CanDoSomething) {
     t.Errorf("'something' string fails to give CanDoSomething permission")
+  }
+}
+
+func TestToString(t *testing.T) {
+  p := FromString("something,anything")
+  if got, want := p.ToString(), "something,anything"; got != want {
+    t.Errorf("ToString: got %q, want %q", got, want)
   }
 }

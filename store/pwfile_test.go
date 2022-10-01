@@ -11,10 +11,72 @@ import (
 
 const CanDoSomething permissions.Permission = "something"
 
+func TestCreatePasswordFile(t *testing.T) {
+  pf, err := ioutil.TempFile("", "pwfile-test")
+  if err != nil {
+    t.Fatalf("failed to create temp password file")
+  }
+  defer os.Remove(pf.Name())    // clean up
+  err = pf.Close()
+  if err != nil {
+    t.Errorf("error closing tmp password file")
+  }
+
+  pwStore := NewPwFile(pf.Name())
+  err = pwStore.CreatePasswordFile()
+  if err == nil {
+    t.Errorf("attempting to create existing password file should fail")
+  }
+  err = os.Remove(pf.Name())
+  if err != nil {
+    t.Errorf("failed to remove tmp password file: %v", err)
+  }
+  err = pwStore.CreatePasswordFile()
+  if err != nil {
+    t.Errorf("failed to create password file")
+  }
+}
+
+func TestSaveError(t *testing.T) {
+  pf, err := ioutil.TempFile("", "pwfile-test")
+  if err != nil {
+    t.Fatalf("failed to create temp password file")
+  }
+  defer os.Remove(pf.Name())    // clean up
+  err = pf.Close()
+  if err != nil {
+    t.Errorf("error closing tmp password file")
+  }
+  pw := NewPwFile(pf.Name())
+  m, err := pw.Load()
+  if err != nil {
+    t.Errorf("error loading password file: %v", err)
+  }
+
+  // Saving the password file after a change is done by creating a new temp
+  // file and moving it onto the old file. To make this fail, we create a
+  // file of that new name and make it read-only.
+  // Now make the password file protected so a write on save fails
+  tfName := pf.Name()+".new"
+  tf, err := os.Create(tfName)
+  if err != nil {
+    t.Fatalf("failed to create temp password file")
+  }
+  defer os.Remove(tf.Name())    // clean up
+  err = os.Chmod(tf.Name(), 0400)       // read-only
+  if err!=nil {
+    t.Fatalf("error setting temp password file (~) to read-only: %v", err)
+  }
+  err = pw.Save(m)
+  if err == nil {
+    t.Errorf("expected error updating password, did not get error")
+  }
+}
+
 func TestLoadSaveFile(t *testing.T) {
   pwfile := "testdata/pw1.txt"
-  pf := NewPwFile(pwfile)
-  m, err := pf.Load()
+  pw := NewPwFile(pwfile)
+  m, err := pw.Load()
   if err != nil {
     t.Fatalf("failed to load password file %s: %v", pwfile, err)
   }
@@ -49,8 +111,8 @@ func TestLoadSaveFile(t *testing.T) {
   if err != nil {
     t.Fatalf("failed to precreate saved password file %s: %v:", pwsavefile, err)
   }
-  pf2 := NewPwFile(pwsavefile)
-  err = pf2.Save(m)
+  pw2 := NewPwFile(pwsavefile)
+  err = pw2.Save(m)
   if err != nil {
     t.Fatalf("error saving new password file %s: %v", pwsavefile, err)
   }

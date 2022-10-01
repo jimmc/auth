@@ -17,9 +17,7 @@ func NewUsers(users map[string]*User) *Users {
 }
 
 func Empty() *Users {
-  return &Users{
-    users: make(map[string]*User),
-  }
+  return NewUsers(make(map[string]*User))
 }
 
 func (m *Users) UserCount() int {

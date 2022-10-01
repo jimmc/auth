@@ -26,14 +26,29 @@ func TestRequireAuth(t *testing.T) {
     t.Fatalf("error create auth list request: %v", err)
   }
 
+  // Test the error case, where there is not yet a current user.
+  if got, want := CurrentUserHasPermission(req, CanDoSomething), false; got!=want {
+    t.Errorf("error checking permission for no current user, got %v, want %v", got, want)
+  }
+
   var reqUser *users.User
-  baseHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+  baseHandlerF := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
     reqUser = CurrentUser(r)
+    if got, want := CurrentUserHasPermission(r, CanDoSomething), false; got != want {
+        t.Errorf("current user permission: got %v, want %v", got, want)
+    }
   })
-  wrappedHandler := h.RequireAuth(baseHandler)
+  baseHandlerT := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    reqUser = CurrentUser(r)
+    if got, want := CurrentUserHasPermission(r, CanDoSomething), true; got != want {
+        t.Errorf("current user permission: got %v, want %v", got, want)
+    }
+  })
+  wrappedHandlerF := h.RequireAuth(baseHandlerF)
+  wrappedHandlerT := h.RequireAuth(baseHandlerT)
 
   rr := httptest.NewRecorder()
-  wrappedHandler.ServeHTTP(rr, req)
+  wrappedHandlerF.ServeHTTP(rr, req)
   if got, want := rr.Code, http.StatusUnauthorized; got != want {
     t.Errorf("request without auth: got status %d, want %d", got, want)
   }
@@ -44,7 +59,7 @@ func TestRequireAuth(t *testing.T) {
   cookie := newToken(user, idstr).cookie(h.config.TokenCookieName)
   req.AddCookie(cookie)
   reqUser = nil
-  wrappedHandler.ServeHTTP(rr, req)
+  wrappedHandlerF.ServeHTTP(rr, req)
   if got, want := rr.Code, http.StatusOK; got != want {
     t.Errorf("request with auth: got status %d, want %d", got, want)
   }
@@ -68,7 +83,7 @@ func TestRequireAuth(t *testing.T) {
   cookie = newToken(user, idstr).cookie(h.config.TokenCookieName)
   req.AddCookie(cookie)
   reqUser = nil
-  wrappedHandler.ServeHTTP(rr, req)
+  wrappedHandlerT.ServeHTTP(rr, req)
   if got, want := rr.Code, http.StatusOK; got != want {
     t.Errorf("request with auth: got status %d, want %d", got, want)
   }

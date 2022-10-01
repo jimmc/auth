@@ -60,14 +60,52 @@ func TestPasswordFile(t *testing.T) {
   }
   err = h.UpdatePassword("user1", "abcd")
   if err != nil {
-    t.Errorf("failed to update password")
+    t.Errorf("failed to update password: %v", err)
   }
   err = h.loadUsers()
   if err != nil {
-    t.Errorf("failed to load password file after updating")
+    t.Errorf("failed to load password file after updating: %v", err)
   }
-  if got, want := h.getCryptword("user1"), h.generateCryptword("user1", "abcd"); got != want {
+  if got, want := h.getCryptword("user1"), GenerateCryptword("user1", "abcd"); got != want {
     t.Errorf("user cryptword after saving: got %s, want %s", got, want)
+  }
+
+  // Saving the password file after a change is done by creating a new temp
+  // file and moving it onto the old file. To make this fail, we create a
+  // file of that new name and make it read-only.
+  // Now make the password file protected so a write on save fails
+  tfName := pf.Name()+".new"
+  tf, err := os.Create(tfName)
+  if err != nil {
+    t.Fatalf("failed to create temp password file")
+  }
+  defer os.Remove(tf.Name())    // clean up
+  err = os.Chmod(tf.Name(), 0400)       // read-only
+  if err!=nil {
+    t.Fatalf("error setting temp password file (~) to read-only: %v", err)
+  }
+  err = h.UpdatePassword("user1", "xyz")
+  if err == nil {
+    t.Errorf("expected error updating password, did not get error")
+  }
+}
+
+func TestMissingPasswordFile(t *testing.T) {
+  noSuchFile := "/no/such/file/foo.txt"
+  pwStore := store.NewPwFile(noSuchFile)
+  c := &Config{
+    Prefix: "/pre/",
+    Store: pwStore,
+    MaxClockSkewSeconds: 2,
+  }
+  h := NewHandler(c)
+  err := h.loadUsers()
+  if err == nil {
+    t.Errorf("expected error loading file, did not get error")
+  }
+  err = h.UpdatePassword("user1", "abcd")
+  if err == nil {
+    t.Errorf("expected error updating password, did not get error")
   }
 }
 

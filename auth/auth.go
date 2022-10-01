@@ -61,6 +61,7 @@ func NewHandler(c *Config) Handler {
 }
 
 // Read a password from the terminal and pass it to UpdatePassword.
+// This function is difficult to test automatically. It should be tested manually.
 func (h *Handler) UpdateUserPassword(userid string) error {
   if !terminal.IsTerminal(syscall.Stdin) {
     return fmt.Errorf("updatePassword option requires terminal for input")
@@ -91,7 +92,7 @@ func (h *Handler) UpdatePassword(userid, password string) error {
   if err != nil {
     return err
   }
-  cryptword := h.generateCryptword(userid, password)
+  cryptword := GenerateCryptword(userid, password)
   h.setCryptword(userid, cryptword)
   err = h.saveUsers()
   if err != nil {
@@ -122,7 +123,7 @@ func (h *Handler) getCryptword(userid string) string {
   return h.users.Cryptword(userid)
 }
 
-func (h *Handler) generateCryptword(userid, password string) string {
+func GenerateCryptword(userid, password string) string {
   return sha256sum(userid + "-" + password)
 }
 
