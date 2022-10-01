@@ -66,7 +66,7 @@ func TestPasswordFile(t *testing.T) {
   if err != nil {
     t.Errorf("failed to load password file after updating: %v", err)
   }
-  if got, want := h.getCryptword("user1"), GenerateCryptword("user1", "abcd"); got != want {
+  if got, want := h.getCryptword("user1"), h.generateCryptword("user1", "abcd"); got != want {
     t.Errorf("user cryptword after saving: got %s, want %s", got, want)
   }
 

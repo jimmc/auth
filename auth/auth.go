@@ -92,7 +92,7 @@ func (h *Handler) UpdatePassword(userid, password string) error {
   if err != nil {
     return err
   }
-  cryptword := GenerateCryptword(userid, password)
+  cryptword := h.generateCryptword(userid, password)
   h.setCryptword(userid, cryptword)
   err = h.saveUsers()
   if err != nil {
@@ -123,7 +123,7 @@ func (h *Handler) getCryptword(userid string) string {
   return h.users.Cryptword(userid)
 }
 
-func GenerateCryptword(userid, password string) string {
+func (h *Handler) generateCryptword(userid, password string) string {
   return sha256sum(userid + "-" + password)
 }
 
