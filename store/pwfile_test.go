@@ -7,6 +7,7 @@ import (
   "testing"
 
   "github.com/jimmc/auth/permissions"
+  "github.com/jimmc/auth/users"
 )
 
 const CanDoSomething permissions.Permission = "something"
@@ -34,6 +35,50 @@ func TestCreatePasswordFile(t *testing.T) {
   err = pwStore.CreatePasswordFile()
   if err != nil {
     t.Errorf("failed to create password file")
+  }
+}
+
+func TestBadCreatePasswordFile(t *testing.T) {
+  pwStore := NewPwFile("/no/such/file/foo.txt")
+  err := pwStore.CreatePasswordFile()
+  if err == nil {
+    t.Errorf("attempting to create password file in bad location should fail")
+  }
+}
+
+func TestLoadBadPasswordFile(t *testing.T) {
+  pwStore := NewPwFile("/no/such/file/foo.txt")
+  err := pwStore.PreLoad()
+  if err == nil {
+    t.Errorf("attempting to load password file from bad location should fail")
+  }
+}
+
+func TestUpdateUser(t *testing.T) {
+  pf, err := ioutil.TempFile("", "pwfile-test")
+  if err != nil {
+    t.Fatalf("failed to create temp password file")
+  }
+  defer os.Remove(pf.Name())    // clean up
+  err = pf.Close()
+  if err != nil {
+    t.Errorf("error closing tmp password file")
+  }
+
+  pwStore := NewPwFile(pf.Name())
+  if got, want := pwStore.UserCount(), 0; got != want {
+    t.Errorf("user count before mods: got %d, want %d", got, want)
+  }
+  var nilUser *users.User
+  if got, want := pwStore.User("user1"), nilUser; got != want {
+    t.Errorf("user1 before being created: got %v, want %v", got, want)
+  }
+  pwStore.SetCryptword("user1", "cw1")
+  if got, want := pwStore.UserCount(), 1; got != want {
+    t.Errorf("user count after adding user1: got %d, want %d", got, want)
+  }
+  if got, want := pwStore.User("user1").Cryptword(), "cw1"; got != want {
+    t.Errorf("user1 Cryptword after being added: got %v, want %v", got, want)
   }
 }
 
