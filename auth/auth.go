@@ -98,11 +98,11 @@ func (h *Handler) UpdatePassword(userid, password string) error {
 }
 
 func (h *Handler) loadUsers() error {
-  return h.config.Store.PreLoad()
+  return h.config.Store.Load()
 }
 
 func (h *Handler) saveUsers() error {
-  return h.config.Store.PostSave()
+  return h.config.Store.Save()
 }
 
 func (h *Handler) setCryptword(userid, cryptword string) {

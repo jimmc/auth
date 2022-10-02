@@ -40,7 +40,7 @@ func (pf *PwFile) CreatePasswordFile() error {
   return nil
 }
 
-func (pf *PwFile) PreLoad() error {
+func (pf *PwFile) Load() error {
   f, err := os.Open(pf.filename)
   if err != nil {
     return fmt.Errorf("error opening password file %s: %v", pf.filename, err)
@@ -58,7 +58,7 @@ func (pf *PwFile) PreLoad() error {
   return nil
 }
 
-func (pf *PwFile) PostSave() error {
+func (pf *PwFile) Save() error {
   newFilePath := pf.filename + ".new"
   f, err := os.Create(newFilePath)
   if err != nil {

@@ -48,7 +48,7 @@ func TestBadCreatePasswordFile(t *testing.T) {
 
 func TestLoadBadPasswordFile(t *testing.T) {
   pwStore := NewPwFile("/no/such/file/foo.txt")
-  err := pwStore.PreLoad()
+  err := pwStore.Load()
   if err == nil {
     t.Errorf("attempting to load password file from bad location should fail")
   }
@@ -93,7 +93,7 @@ func TestSaveError(t *testing.T) {
     t.Errorf("error closing tmp password file")
   }
   pw := NewPwFile(pf.Name())
-  err = pw.PreLoad()
+  err = pw.Load()
   if err != nil {
     t.Errorf("error loading password file: %v", err)
   }
@@ -112,7 +112,7 @@ func TestSaveError(t *testing.T) {
   if err!=nil {
     t.Fatalf("error setting temp password file (~) to read-only: %v", err)
   }
-  err = pw.PostSave()
+  err = pw.Save()
   if err == nil {
     t.Errorf("expected error updating password, did not get error")
   }
@@ -121,7 +121,7 @@ func TestSaveError(t *testing.T) {
 func TestLoadSaveFile(t *testing.T) {
   pwfile := "testdata/pw1.txt"
   pw := NewPwFile(pwfile)
-  err := pw.PreLoad()
+  err := pw.Load()
   if err != nil {
     t.Fatalf("failed to load password file %s: %v", pwfile, err)
   }
@@ -158,7 +158,7 @@ func TestLoadSaveFile(t *testing.T) {
   }
   pw2 := NewPwFile(pwsavefile)
   pw2.users = pw.users          // Hack: make pw2 write the user data of pw1
-  err = pw2.PostSave()
+  err = pw2.Save()
   if err != nil {
     t.Fatalf("error saving new password file %s: %v", pwsavefile, err)
   }
