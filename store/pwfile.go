@@ -14,67 +14,70 @@ import (
 // similar to a Unix /etc/passwd file.
 // Each line has data for one user in colon-separated fields with the format
 //   username:password:permissions
-// where the permissions field is a comma-separated list of permissions names.
+// where the permissions field is a comma-separated list of permission names.
 type PwFile struct {
-    Filename string     // The CSV file with our data.
+    filename string     // The CSV file with our data.
+    users *users.Users
 }
 
 func NewPwFile(filename string) *PwFile {
   return &PwFile{
-    Filename: filename,
+    filename: filename,
+    users: users.Empty(),
   }
 }
 
 func (pf *PwFile) CreatePasswordFile() error {
-  f, err := os.Open(pf.Filename)
+  f, err := os.Open(pf.filename)
   if err == nil || !os.IsNotExist(err) {
-    return fmt.Errorf("password file already exists at %s", pf.Filename)
+    return fmt.Errorf("password file already exists at %s", pf.filename)
   }
-  f, err = os.Create(pf.Filename)
+  f, err = os.Create(pf.filename)
   if err != nil {
-    return fmt.Errorf("error creating new password file at %s: %v", pf.Filename, err)
+    return fmt.Errorf("error creating new password file at %s: %v", pf.filename, err)
   }
   f.Close()
   return nil
 }
 
-func (pf *PwFile) Load() (*users.Users, error) {
-  f, err := os.Open(pf.Filename)
+func (pf *PwFile) PreLoad() error {
+  f, err := os.Open(pf.filename)
   if err != nil {
-    return nil, fmt.Errorf("error opening password file %s: %v", pf.Filename, err)
+    return fmt.Errorf("error opening password file %s: %v", pf.filename, err)
   }
   r := csv.NewReader(bufio.NewReader(f))
   r.FieldsPerRecord = 3         // userid, password, permissions
 
   records, err := r.ReadAll()
   if err != nil {
-    return nil, fmt.Errorf("error loading password file %s: %v", pf.Filename, err)
+    return fmt.Errorf("error loading password file %s: %v", pf.filename, err)
   }
 
   uu := pf.recordsToUsers(records)
-  return users.NewUsers(uu), nil
+  pf.users = users.NewUsers(uu)
+  return nil
 }
 
-func (pf *PwFile) Save(uu *users.Users) error {
-  newFilePath := pf.Filename + ".new"
+func (pf *PwFile) PostSave() error {
+  newFilePath := pf.filename + ".new"
   f, err := os.Create(newFilePath)
   if err != nil {
     return fmt.Errorf("error creating new password file %s: %v", newFilePath, err)
   }
   w := csv.NewWriter(bufio.NewWriter(f))
-  err = w.WriteAll(pf.usersToRecords(uu))
+  err = w.WriteAll(pf.usersToRecords(pf.users))
   if err != nil {
     return fmt.Errorf("error writing new password file %s: %v", newFilePath, err)
   }
   w.Flush()
   f.Close()
 
-  backupFilePath := pf.Filename + "~"
-  err = os.Rename(pf.Filename, backupFilePath)
+  backupFilePath := pf.filename + "~"
+  err = os.Rename(pf.filename, backupFilePath)
   if err != nil {
     return fmt.Errorf("error moving old file to backup path %s: %v", backupFilePath, err)
   }
-  err = os.Rename(newFilePath, pf.Filename)
+  err = os.Rename(newFilePath, pf.filename)
   if err != nil {
     return fmt.Errorf("error moving new file %s to become active file: %v", newFilePath, err)
   }
@@ -102,4 +105,16 @@ func (pf *PwFile) usersToRecords(uu *users.Users) [][]string {
     records[n] = []string{ u.Id(), u.Cryptword(), u.PermissionsString() }
   }
   return records
+}
+
+func (pf *PwFile) User(userid string) *users.User {
+  return pf.users.User(userid)
+}
+
+func (pf *PwFile) SetCryptword(userid, cryptword string) {
+  pf.users.SetCryptword(userid, cryptword)
+}
+
+func (pf *PwFile) UserCount() int {
+  return pf.users.UserCount()
 }

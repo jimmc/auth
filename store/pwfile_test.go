@@ -48,7 +48,7 @@ func TestSaveError(t *testing.T) {
     t.Errorf("error closing tmp password file")
   }
   pw := NewPwFile(pf.Name())
-  m, err := pw.Load()
+  err = pw.PreLoad()
   if err != nil {
     t.Errorf("error loading password file: %v", err)
   }
@@ -67,7 +67,7 @@ func TestSaveError(t *testing.T) {
   if err!=nil {
     t.Fatalf("error setting temp password file (~) to read-only: %v", err)
   }
-  err = pw.Save(m)
+  err = pw.PostSave()
   if err == nil {
     t.Errorf("expected error updating password, did not get error")
   }
@@ -76,27 +76,27 @@ func TestSaveError(t *testing.T) {
 func TestLoadSaveFile(t *testing.T) {
   pwfile := "testdata/pw1.txt"
   pw := NewPwFile(pwfile)
-  m, err := pw.Load()
+  err := pw.PreLoad()
   if err != nil {
     t.Fatalf("failed to load password file %s: %v", pwfile, err)
   }
 
-  if got, want := m.UserCount(), 2; got != want {
+  if got, want := pw.UserCount(), 2; got != want {
     t.Fatalf("user count in password file %s: got %d, want %d", pwfile, got, want)
   }
-  if got, want := m.Cryptword("user1"), "d761bfe5ffda189a8f1c2212c5fb3fe65274a070d0b1c4f4ec6c2c020db5f22b";
+  if got, want := pw.User("user1").Cryptword(), "d761bfe5ffda189a8f1c2212c5fb3fe65274a070d0b1c4f4ec6c2c020db5f22b";
       got != want {
     t.Errorf("cryptword for user1: got %s, want %s", got, want)
   }
 
   perms := permissions.FromString("something")
-  m.AddUser("user3", "cw3", perms)
-  m.SetCryptword("user2", "cw2")
+  pw.users.AddUser("user3", "cw3", perms)
+  pw.users.SetCryptword("user2", "cw2")
 
-  if got, want := m.HasPermission("user3", CanDoSomething), true; got !=want {
+  if got, want := pw.users.HasPermission("user3", CanDoSomething), true; got !=want {
     t.Errorf("something permission for user3: got %v, want %v", got, want)
   }
-  if got, want := m.HasPermission("user2", CanDoSomething), false; got !=want {
+  if got, want := pw.users.HasPermission("user2", CanDoSomething), false; got !=want {
     t.Errorf("something permission for user2: got %v, want %v", got, want)
   }
 
@@ -112,7 +112,8 @@ func TestLoadSaveFile(t *testing.T) {
     t.Fatalf("failed to precreate saved password file %s: %v:", pwsavefile, err)
   }
   pw2 := NewPwFile(pwsavefile)
-  err = pw2.Save(m)
+  pw2.users = pw.users          // Hack: make pw2 write the user data of pw1
+  err = pw2.PostSave()
   if err != nil {
     t.Fatalf("error saving new password file %s: %v", pwsavefile, err)
   }

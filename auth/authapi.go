@@ -83,7 +83,7 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
     seconds = 0
   }
 
-  user := h.users.User(userid)
+  user := h.config.Store.User(userid)
   if user != nil && h.nonceIsValidNow(userid, nonce, seconds) {
     // OK to log in; generate a bearer token and put in a cookie
     idstr := clientIdString(r)

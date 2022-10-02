@@ -9,31 +9,31 @@ import (
   "github.com/jimmc/auth/store"
 )
 
-var (
-  testConfig = &Config{
-    Prefix: "/pre/",
-    MaxClockSkewSeconds: 2,
-  }
-)
-
-func TestPasswordFile(t *testing.T) {
+// Returns a config and the temp file used in the config
+func makeTestConfig(t *testing.T) (*Config, *os.File) {
+  t.Helper()
   pf, err := ioutil.TempFile("", "auth-test")
   if err != nil {
     t.Fatalf("failed to create temp password file")
   }
-  defer os.Remove(pf.Name())    // clean up
   pwStore := store.NewPwFile(pf.Name())
   c := &Config{
     Prefix: "/pre/",
     Store: pwStore,
     MaxClockSkewSeconds: 2,
   }
-  h := NewHandler(c)
-  err = h.loadUsers()
+  return c, pf
+}
+
+func TestPasswordFile(t *testing.T) {
+  testConfig, pf := makeTestConfig(t)
+  defer os.Remove(pf.Name())    // clean up
+  h := NewHandler(testConfig)
+  err := h.loadUsers()
   if err != nil {
     t.Errorf("failed to load empty password file")
   }
-  if got, want := h.users.UserCount(), 0; got != want {
+  if got, want := h.config.Store.UserCount(), 0; got != want {
     t.Errorf("empty tmp password file got %d records, want %d", got, want)
   }
   err = pf.Close()
@@ -41,6 +41,7 @@ func TestPasswordFile(t *testing.T) {
     t.Errorf("error closing tmp password file")
   }
 
+  pwStore := (testConfig.Store).(*store.PwFile)
   err = pwStore.CreatePasswordFile()
   if err == nil {
     t.Errorf("attempting to create existing password file should fail")
@@ -110,6 +111,8 @@ func TestMissingPasswordFile(t *testing.T) {
 }
 
 func TestCryptword(t *testing.T) {
+  testConfig, pf := makeTestConfig(t)
+  defer os.Remove(pf.Name())    // clean up
   h := NewHandler(testConfig)
   cw := h.getCryptword("user1")
   if cw != "" {
@@ -128,6 +131,8 @@ func TestCryptword(t *testing.T) {
 }
 
 func TestGenerateNonceAtTime(t *testing.T) {
+  testConfig, pf := makeTestConfig(t)
+  defer os.Remove(pf.Name())    // clean up
   h := NewHandler(testConfig)
   t0 := int64(1000000)
   t1 := t0 + 1
@@ -142,6 +147,8 @@ func TestGenerateNonceAtTime(t *testing.T) {
 }
 
 func TestNonceIsValidAtTime(t *testing.T) {
+  testConfig, pf := makeTestConfig(t)
+  defer os.Remove(pf.Name())    // clean up
   h := NewHandler(testConfig)
   t0 := int64(1000000)
   t1 := t0 + 1
@@ -155,6 +162,8 @@ func TestNonceIsValidAtTime(t *testing.T) {
 }
 
 func TestNonceIsValidNow(t *testing.T) {
+  testConfig, pf := makeTestConfig(t)
+  defer os.Remove(pf.Name())    // clean up
   h := NewHandler(testConfig)
   t0 := int64(1000000)
   t1 := t0

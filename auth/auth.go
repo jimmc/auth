@@ -23,7 +23,6 @@ import (
   "golang.org/x/crypto/ssh/terminal"
 
   "github.com/jimmc/auth/store"
-  "github.com/jimmc/auth/users"
 )
 
 var (
@@ -40,20 +39,17 @@ type Config struct {
 type Handler struct {
   ApiHandler http.Handler
   config *Config
-  users *users.Users
 }
 
 func NewHandler(c *Config) Handler {
   h := Handler{config: c}
   if c.Store==nil {
     log.Printf("Error: no Store provided")
-    h.users = users.Empty()
     return h
   }
   err := h.loadUsers()
   if err != nil {
     log.Printf("Error loading password file: %v", err)
-    h.users = users.Empty()
   }
   h.initApiHandler()
   initTokens()
@@ -102,25 +98,24 @@ func (h *Handler) UpdatePassword(userid, password string) error {
 }
 
 func (h *Handler) loadUsers() error {
-  users, err := h.config.Store.Load()
-  if err != nil {
-    return err
-  }
-  h.users = users
-  return nil
+  return h.config.Store.PreLoad()
 }
 
 func (h *Handler) saveUsers() error {
-  return h.config.Store.Save(h.users)
+  return h.config.Store.PostSave()
 }
 
 func (h *Handler) setCryptword(userid, cryptword string) {
-  h.users.SetCryptword(userid, cryptword)
+  h.config.Store.SetCryptword(userid, cryptword)
 }
 
 // Get the encrypted password for the given user from our previously-loaded password file.
 func (h *Handler) getCryptword(userid string) string {
-  return h.users.Cryptword(userid)
+  user :=  h.config.Store.User(userid)
+  if user == nil {
+    return ""
+  }
+  return user.Cryptword()
 }
 
 func (h *Handler) generateCryptword(userid, password string) string {
