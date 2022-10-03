@@ -14,12 +14,12 @@ package auth
 import (
   "crypto/sha256"
   "fmt"
-  "log"
   "net/http"
   "strconv"
   "syscall"
   "time"
 
+  "github.com/golang/glog"
   "golang.org/x/crypto/ssh/terminal"
 
   "github.com/jimmc/auth/store"
@@ -44,12 +44,12 @@ type Handler struct {
 func NewHandler(c *Config) Handler {
   h := Handler{config: c}
   if c.Store==nil {
-    log.Printf("Error: no Store provided")
+    glog.Errorf("Error: no Store provided")
     return h
   }
   err := h.loadUsers()
   if err != nil {
-    log.Printf("Error loading password file: %v", err)
+    glog.Errorf("Error loading password file: %v", err)
   }
   h.initApiHandler()
   initTokens()
@@ -133,7 +133,7 @@ func (h *Handler) nonceIsValidAtTime(userid, nonce string, secondsSinceEpoch int
   if nonce == goodNonce {
     return true
   } else {
-    log.Printf("nonce %v does not match goodNonce %v", nonce, goodNonce)
+    glog.Warningf("nonce %v does not match goodNonce %v", nonce, goodNonce)
     return false
   }
 }
@@ -142,7 +142,7 @@ func (h *Handler) nonceIsValidNow(userid, nonce string, seconds int64) bool {
   t := timeNow().Unix()
   delta := t - seconds
   if delta > int64(h.config.MaxClockSkewSeconds) || delta < -int64(h.config.MaxClockSkewSeconds) {
-    log.Printf("now=%v, client-time=%v, skew is more than max of %v",
+    glog.Warningf("now=%v, client-time=%v, skew is more than max of %v",
         t, seconds, h.config.MaxClockSkewSeconds)
     return false
   }

@@ -4,10 +4,11 @@ import (
   "context"
   "encoding/json"
   "fmt"
-  "log"
   "net/http"
   "strconv"
   "time"
+
+  "github.com/golang/glog"
 
   "github.com/jimmc/auth/permissions"
   "github.com/jimmc/auth/users"
@@ -79,7 +80,7 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
   timestr := r.FormValue("time")
   seconds, err := strconv.ParseInt(timestr, 10, 64)
   if err != nil {
-    log.Printf("Error converting time string '%s': %v\n", timestr, err)
+    glog.Errorf("Error converting time string '%s': %v\n", timestr, err)
     seconds = 0
   }
 

@@ -2,7 +2,8 @@ package store
 
 import (
   "database/sql"
-  "fmt"
+
+  "github.com/golang/glog"
 
   "github.com/jimmc/auth/permissions"
   "github.com/jimmc/auth/users"
@@ -47,7 +48,7 @@ func (pdb *PwDB) User(userid string) *users.User {
     return nil          // No matching userid found
   }
   if err != nil {
-    fmt.Printf("Error scanning for user %q: %v\n", userid, err)
+    glog.Errorf("Error scanning for user %q: %v\n", userid, err)
     return nil
   }
   user := users.NewUser(userid, cryptword, permissions.FromString(perms))
@@ -56,7 +57,7 @@ func (pdb *PwDB) User(userid string) *users.User {
 
 func (pdb *PwDB) SetCryptword(userid, cryptword string) {
   if userid == "" {
-    fmt.Printf("Can't SetCryptword with no userid\n")
+    glog.Errorf("Can't SetCryptword with no userid\n")
     return
   }
   // Assume row does not exist, try to insert it.
@@ -65,12 +66,12 @@ func (pdb *PwDB) SetCryptword(userid, cryptword string) {
   if err == nil {
     return      // Succeeded
   }
-  fmt.Printf("INSERT returned err=%v\n", err)
+  glog.Infof("INSERT returned err=%v\n", err)   // Expected if the user already exists.
   // If the INSERT failed, assume it was because the row already exists, so try updating it.
   query := "UPDATE user SET cryptword = :cw WHERE id = :id;"
   _, err = pdb.db.Exec(query,sql.Named("cw", cryptword),sql.Named("id", userid))
   if err != nil {
-    fmt.Printf("Error setting cryptword for user %q: %v\n", userid, err)
+    glog.Errorf("Error setting cryptword for user %q: %v\n", userid, err)
   }
 }
 
@@ -79,7 +80,7 @@ func (pdb *PwDB) UserCount() int {
   sql := "SELECT count(*) from user;"
   err := pdb.db.QueryRow(sql).Scan(&count)
   if err != nil {
-    fmt.Printf("Error counting user in database: %v\n", err)
+    glog.Errorf("Error counting user in database: %v\n", err)
     return 0
   }
   return count
