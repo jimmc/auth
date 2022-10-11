@@ -1,0 +1,55 @@
+<html>
+  <head>
+    <title>auth example</title>
+    <script src="./example.js"></script>
+    <script src="./sha256.js"></script>
+    <link rel="stylesheet" href="./example.css">
+  </head>
+  <body onload="Example.onLoad()">
+
+    <div id="loggedout">
+      <!-- If we are logged out, show the login screen. -->
+      <div id="logincontainer">
+        <div>
+          <span class=label>Username:</span>
+          <input type=text id="username"></input>
+        </div>
+        <div>
+          <span class=label>Password:</span>
+          <input type=password id="password"></input>
+        </div>
+        <div class="buttons">
+          <button type=button raised class="primary" onclick="Example.onClickLogin()">
+            Login
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="loggedin">
+      <div id="logoutcontainer">
+        You are logged in.
+        <div class="buttons">
+          <button type=button raised class="primary" onclick="Example.onClickLogout()">
+            Logout
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <hr>
+    <div id="testbuttons">
+      <div class="buttons">
+        <button type=button raised class="primary" onclick="Example.onClickOpen()">
+          Click here to try /open/hello
+        </button>
+      </div>
+      <div class="buttons">
+        <button type=button raised class="primary" onclick="Example.onClickApi()">
+          Click here to try /api/secret
+        </button>
+      </div>
+    </div>
+
+  </body>
+</html>

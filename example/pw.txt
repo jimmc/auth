@@ -1,0 +1,5 @@
+# Sample password file.  ,,
+# We don't actually understand comment lines - these are just long user names :-) ,,
+# Password for user1 is pw1  ,,
+# Generate password 'pw1' for user1: echo -n 'user1-pw1' | sha256sum  ,,
+user1,d761bfe5ffda189a8f1c2212c5fb3fe65274a070d0b1c4f4ec6c2c020db5f22b,

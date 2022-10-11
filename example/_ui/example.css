@@ -1,0 +1,18 @@
+#loggedin {
+  display: none;        /* Assume we are logged out to start */
+}
+
+#logincontainer {
+  background-color: white;
+  display: table;
+}
+#logincontainer > div {
+  display: table-row;
+}
+#logincontainer > div > span, input {
+  display: table-cell;
+}
+.error {
+  color: red;
+  margin-top: 10px;
+}
