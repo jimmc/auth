@@ -1,5 +1,9 @@
 # Sample password file.  ,,
 # We don't actually understand comment lines - these are just long user names :-) ,,
 # Password for user1 is pw1  ,,
+# Password for user2 is pw2 - user2 has 'edit' permission ,,
+# Password for user3 is pw3 - user3 has 'root' permission ,,
 # Generate password 'pw1' for user1: echo -n 'user1-pw1' | sha256sum  ,,
 user1,d761bfe5ffda189a8f1c2212c5fb3fe65274a070d0b1c4f4ec6c2c020db5f22b,
+user2,8b586163aa4520e91925dbcb9b37961d17a7d1aba3b58d7400fd43d913c6dc5c,edit
+user3,c35c214d0785975abc510297463b52ff385e6664c638d6b927cd449f3d2e7515,root

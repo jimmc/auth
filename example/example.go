@@ -11,6 +11,7 @@ import (
   "strconv"
 
   "github.com/jimmc/auth/auth"
+  "github.com/jimmc/auth/permissions"
   "github.com/jimmc/auth/store"
 )
 
@@ -20,6 +21,8 @@ const (
   passwordFilePath = "pw.txt"  // Relative to this directory.
   maxClockSkewSeconds = 5
   uiRoot = "_ui"        // Relative to this directory.
+  CanEdit = permissions.Permission("edit")
+  HasRoot = permissions.Permission("root")
 )
 
 func main() {
@@ -28,12 +31,6 @@ func main() {
 
 // doMain return 0 if the program is exiting with no errors.
 func doMain() int {
-  apiPrefix := "/api/"
-  apiHandler := newApiHandler(apiPrefix)         // We will require auth for these calls.
-
-  openPrefix := "/open/"
-  openHandler := newOpenHandler(openPrefix)       // These calls will not require auth.
-
   authPrefix := "/auth/"
   authStore := store.NewPwFile(passwordFilePath)
   authHandler := auth.NewHandler(&auth.Config{
@@ -42,6 +39,12 @@ func doMain() int {
     TokenCookieName: "AUTH_EXAMPLE",
     MaxClockSkewSeconds: maxClockSkewSeconds,
   })
+
+  apiPrefix := "/api/"
+  apiHandler := newApiHandler(apiPrefix, authHandler )  // We will require auth for these calls.
+
+  openPrefix := "/open/"
+  openHandler := newOpenHandler(openPrefix)       // These calls will not require auth.
 
   mux := http.NewServeMux()
   uiPrefix := "/ui/"
@@ -73,9 +76,11 @@ func newOpenHandler(prefix string) http.Handler {
 
 // We can add any additional functions to this handler that we
 // want to require authentication.
-func newApiHandler(prefix string) http.Handler {
+func newApiHandler(prefix string, authHandler auth.Handler) http.Handler {
   mux := http.NewServeMux()
   mux.HandleFunc(prefix + "secret", secret)
+  mux.HandleFunc(prefix + "edit", authHandler.RequirePermissionFunc(edit,CanEdit))
+  mux.HandleFunc(prefix + "edit2", edit2)
   return mux
 }
 
@@ -97,9 +102,23 @@ func redirectToUi(w http.ResponseWriter, r *http.Request) {
 // Authentication is handled by the auth package before getting here.
 
 func hello(w http.ResponseWriter, r *http.Request) {
-  marshalAndReply(w, "hello")
+  marshalAndReply(w, "Success for hello!")
 }
 
 func secret(w http.ResponseWriter, r *http.Request) {
-  marshalAndReply(w, "secret")
+  marshalAndReply(w, "Success for secret!")
+}
+
+func edit(w http.ResponseWriter, r *http.Request) {
+  marshalAndReply(w, "Success for edit!")
+}
+
+func edit2(w http.ResponseWriter, r *http.Request) {
+  if auth.CurrentUserHasPermission(r, CanEdit) {
+    marshalAndReply(w, "Success for edit2 with edit permission!")
+  } else if auth.CurrentUserHasPermission(r, HasRoot) {
+    marshalAndReply(w, "Success for edit2 with root permission!")
+  } else {
+    http.Error(w, "Not authorized", http.StatusUnauthorized)
+  }
 }

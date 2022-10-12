@@ -32,22 +32,54 @@ func (h *Handler) initApiHandler() {
   h.ApiHandler = mux
 }
 
+// RequirePermission requires Authentication.
+// Use this function to wrap the call to your handler when you
+// call http.NewServeMux().Handle().
+// If the user is not authenticated, it returns StatusUnauthorized
+// with the message "not authenticated".
+// See also RequirePermission.
 func (h *Handler) RequireAuth(httpHandler http.Handler) http.Handler {
+  return h.RequirePermission(httpHandler, permissions.NoPermission)
+}
+
+// RequirePermission requires Authentication and one permission.
+// Use this function to wrap the call to your handler when you
+// call http.NewServeMux().Handle().
+// If the user is not authenticated, it returns StatusUnauthorized
+// with the message "not authenticated".
+// If the user does not have the specified permission, it returns
+// StatusUnauthorized with a the message "not authorized".
+// If both checks pass, the specified handler is called.
+// For more control, you can use RequireAuth instead of RequirePermission,
+// then call CurrentUserHasPermission to check that condition.
+func (h *Handler) RequirePermission(httpHandler http.Handler, perm permissions.Permission) http.Handler {
   return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
     tokenKey := cookieValue(r, h.config.TokenCookieName)
     idstr := clientIdString(r)
-    if token, valid := currentToken(tokenKey, idstr); valid {
-      token.updateTimeout()
-      http.SetCookie(w, token.cookie(h.config.TokenCookieName)) // Set the renewed cookie
-      user := token.User()
-      rwcu := requestWithContextUser(r, user)
-      httpHandler.ServeHTTP(w, rwcu)
-    } else {
+    token, valid := currentToken(tokenKey, idstr);
+    if !valid {
       // No token, or token is not valid
-      http.Error(w, "Invalid token", http.StatusUnauthorized)
+      http.Error(w, "Not authenticated", http.StatusUnauthorized)
+      return
     }
+    if perm != permissions.NoPermission {
+      if !CurrentUserHasPermission(r, perm) {
+        http.Error(w, "Not authorized", http.StatusUnauthorized)
+        return
+      }
+    }
+    token.updateTimeout()
+    http.SetCookie(w, token.cookie(h.config.TokenCookieName)) // Set the renewed cookie
+    user := token.User()
+    rwcu := requestWithContextUser(r, user)
+    httpHandler.ServeHTTP(w, rwcu)
   })
 }
+
+func (h *Handler) RequirePermissionFunc(handleFunc func(http.ResponseWriter, *http.Request), perm permissions.Permission) func(http.ResponseWriter, *http.Request) {
+  return h.RequirePermission(http.HandlerFunc(handleFunc), perm).ServeHTTP
+}
+
 
 func requestWithContextUser(r *http.Request, user *users.User) *http.Request {
   cwv := context.WithValue(r.Context(), ctxUserKey, user)
@@ -61,6 +93,7 @@ func CurrentUser(r *http.Request) *users.User {
   }
   return v.(*users.User)
 }
+
 
 func CurrentUserHasPermission(r *http.Request, perm permissions.Permission) bool {
   user := CurrentUser(r)

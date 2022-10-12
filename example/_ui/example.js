@@ -5,11 +5,12 @@ class Example {
     const options = {
       encoding: 'direct',
     }
-    const results = await Example.xhrJson(statusUrl, options);
-    console.log("status result", results)
-    const loggedIn = results.LoggedIn
+    const response = await Example.xhrJson(statusUrl, options);
+    console.log("status result", response)
+    const loggedIn = response.LoggedIn
     document.querySelector("#loggedin").style.display = loggedIn?"block":"none";
     document.querySelector("#loggedout").style.display = loggedIn?"none":"block";
+    document.querySelector("#permissions").innerHTML = response.Permissions;
   }
 
   static async onClickLogin() {
@@ -35,6 +36,7 @@ class Example {
         encoding: 'direct',
       };
       const response = await Example.xhrJson(loginUrl, options);
+      document.querySelector("#permissions").innerHTML = response.Permissions;
       console.log("Login succeeded")
     } catch (e) {
       alert("login failed: " + e.response)
@@ -64,6 +66,24 @@ class Example {
       alert("Result of /api/secret: " + result)
     } catch (e) {
       alert("Error trying /api/secret: " + e.response)
+    }
+  }
+
+  static async onClickEdit() {
+    try {
+      const result = await Example.xhrJson("/api/edit")
+      alert("Result of /api/edit: " + result)
+    } catch (e) {
+      alert("Error trying /api/edit: " + e.response)
+    }
+  }
+
+  static async onClickEdit2() {
+    try {
+      const result = await Example.xhrJson("/api/edit2")
+      alert("Result of /api/edit2: " + result)
+    } catch (e) {
+      alert("Error trying /api/edit2: " + e.response)
     }
   }
 

@@ -4,13 +4,16 @@ import (
   "strings"
 )
 
-const permSepChar = " "
-
 type Permission string
 
 type Permissions struct {
   perms map[Permission]bool
 }
+
+const (
+  permSepChar = " "
+  NoPermission = Permission("")
+)
 
 func FromString(permstr string) *Permissions {
   permstr = strings.TrimSpace(permstr)

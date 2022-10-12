@@ -19,7 +19,7 @@
           <input type=password id="password"></input>
         </div>
         <div class="buttons">
-          <button type=button raised class="primary" onclick="Example.onClickLogin()">
+          <button type=button raised onclick="Example.onClickLogin()">
             Login
           </button>
         </div>
@@ -30,24 +30,39 @@
       <div id="logoutcontainer">
         You are logged in.
         <div class="buttons">
-          <button type=button raised class="primary" onclick="Example.onClickLogout()">
+          <button type=button raised onclick="Example.onClickLogout()">
             Logout
           </button>
         </div>
       </div>
+      <span>Permissions (if any): </span><span id="permissions"></span>
     </div>
 
     <hr>
     <div id="testbuttons">
       <div class="buttons">
-        <button type=button raised class="primary" onclick="Example.onClickOpen()">
+        <button type=button raised onclick="Example.onClickOpen()">
           Click here to try /open/hello
         </button>
+        Succeeds even if not logged in
       </div>
       <div class="buttons">
-        <button type=button raised class="primary" onclick="Example.onClickApi()">
+        <button type=button raised onclick="Example.onClickApi()">
           Click here to try /api/secret
         </button>
+        Must be logged in to succeed
+      </div>
+      <div class="buttons">
+        <button type=button raised onclick="Example.onClickEdit()">
+          Click here to try /api/edit
+        </button>
+        Must be logged in and have "edit" permission to succeed
+      </div>
+      <div class="buttons">
+        <button type=button raised onclick="Example.onClickEdit2()">
+          Click here to try /api/edit2
+        </button>
+        Must be logged in and have either "edit" or "root" permission to succeed
       </div>
     </div>
 
