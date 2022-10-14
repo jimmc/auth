@@ -41,8 +41,8 @@ type Handler struct {
   config *Config
 }
 
-func NewHandler(c *Config) Handler {
-  h := Handler{config: c}
+func NewHandler(c *Config) *Handler {
+  h := &Handler{config: c}
   if c.Store==nil {
     glog.Errorf("Error: no Store provided")
     return h
@@ -133,7 +133,7 @@ func (h *Handler) nonceIsValidAtTime(userid, nonce string, secondsSinceEpoch int
   if nonce == goodNonce {
     return true
   } else {
-    glog.Warningf("nonce %v does not match goodNonce %v", nonce, goodNonce)
+    glog.Errorf("nonce %v does not match goodNonce %v", nonce, goodNonce)
     return false
   }
 }
@@ -142,8 +142,8 @@ func (h *Handler) nonceIsValidNow(userid, nonce string, seconds int64) bool {
   t := timeNow().Unix()
   delta := t - seconds
   if delta > int64(h.config.MaxClockSkewSeconds) || delta < -int64(h.config.MaxClockSkewSeconds) {
-    glog.Warningf("now=%v, client-time=%v, skew is more than max of %v",
-        t, seconds, h.config.MaxClockSkewSeconds)
+    glog.Errorf("now=%v, client-time=%v, skew of %d is more than max of %v",
+        t, seconds, delta, h.config.MaxClockSkewSeconds)
     return false
   }
   return h.nonceIsValidAtTime(userid, nonce, seconds)

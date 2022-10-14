@@ -25,6 +25,28 @@ func makeTestConfig(t *testing.T) (*Config, *os.File) {
   return c, pf
 }
 
+func TestConfigNoStore(t *testing.T) {
+  c := &Config{
+    Prefix: "/abc/",
+  }
+  h := NewHandler(c)
+  if h==nil {
+    t.Error("Expected handler even when no Store in config, got nil")
+  }
+}
+
+// Try calling UpdateUserPassword, we expect an error because it
+// wants to use stdin.
+func TestUpdateUserPassword(t *testing.T) {
+  testConfig, pf := makeTestConfig(t)
+  defer os.Remove(pf.Name())    // clean up
+  h := NewHandler(testConfig)
+  err := h.UpdateUserPassword("no-such-user")
+  if err == nil {
+    t.Errorf("Exepcted error from UpdateUserPassword, got nil")
+  }
+}
+
 func TestPasswordFile(t *testing.T) {
   testConfig, pf := makeTestConfig(t)
   defer os.Remove(pf.Name())    // clean up
@@ -167,7 +189,9 @@ func TestNonceIsValidNow(t *testing.T) {
   h := NewHandler(testConfig)
   t0 := int64(1000000)
   t1 := t0
+  oldTimeNow := timeNow
   timeNow = func() time.Time { return time.Unix(t1, 0) }
+  defer func(){timeNow=oldTimeNow}()    // Restore the time function
   nonce := h.generateNonceAtTime("user1", t1)
   if !h.nonceIsValidNow("user1", nonce, t0) {
     t.Errorf("nonce should be valid at same time as generated")

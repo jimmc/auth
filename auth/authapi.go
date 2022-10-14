@@ -32,17 +32,17 @@ func (h *Handler) initApiHandler() {
   h.ApiHandler = mux
 }
 
-// RequirePermission requires Authentication.
+// RequireAuth enforces Authentication.
 // Use this function to wrap the call to your handler when you
 // call http.NewServeMux().Handle().
 // If the user is not authenticated, it returns StatusUnauthorized
 // with the message "not authenticated".
-// See also RequirePermission.
+// See also RequirePermission and RequireAuthFunc.
 func (h *Handler) RequireAuth(httpHandler http.Handler) http.Handler {
   return h.RequirePermission(httpHandler, permissions.NoPermission)
 }
 
-// RequirePermission requires Authentication and one permission.
+// RequirePermission enforces Authentication and having one permission.
 // Use this function to wrap the call to your handler when you
 // call http.NewServeMux().Handle().
 // If the user is not authenticated, it returns StatusUnauthorized
@@ -52,6 +52,7 @@ func (h *Handler) RequireAuth(httpHandler http.Handler) http.Handler {
 // If both checks pass, the specified handler is called.
 // For more control, you can use RequireAuth instead of RequirePermission,
 // then call CurrentUserHasPermission to check that condition.
+// See also RequirePermissionFunc.
 func (h *Handler) RequirePermission(httpHandler http.Handler, perm permissions.Permission) http.Handler {
   return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
     tokenKey := cookieValue(r, h.config.TokenCookieName)
@@ -76,10 +77,17 @@ func (h *Handler) RequirePermission(httpHandler http.Handler, perm permissions.P
   })
 }
 
+// RequireAuthFunc is like RequireAuth, except that it is for use to wrap
+// a handler func rather than a Handler.
+func (h *Handler) RequireAuthFunc(handleFunc func(http.ResponseWriter, *http.Request)) func(http.ResponseWriter, *http.Request) {
+  return h.RequireAuth(http.HandlerFunc(handleFunc)).ServeHTTP
+}
+
+// RequirePermissionFunc is like RequirePermission, except that it is for use to wrap
+// a handler func rather than a Handler.
 func (h *Handler) RequirePermissionFunc(handleFunc func(http.ResponseWriter, *http.Request), perm permissions.Permission) func(http.ResponseWriter, *http.Request) {
   return h.RequirePermission(http.HandlerFunc(handleFunc), perm).ServeHTTP
 }
-
 
 func requestWithContextUser(r *http.Request, user *users.User) *http.Request {
   cwv := context.WithValue(r.Context(), ctxUserKey, user)
@@ -109,8 +117,11 @@ func (h *Handler) apiPrefix(s string) string {
 
 func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
   userid := r.FormValue("userid")
+  glog.V(4).Infof("login userid=%s", userid)
   nonce := r.FormValue("nonce")
+  glog.V(4).Infof("login nonce=%s", nonce)
   timestr := r.FormValue("time")
+  glog.V(4).Infof("login time=%s", timestr)
   seconds, err := strconv.ParseInt(timestr, 10, 64)
   if err != nil {
     glog.Errorf("Error converting time string '%s': %v\n", timestr, err)
@@ -123,6 +134,9 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
     idstr := clientIdString(r)
     http.SetCookie(w, newToken(user, idstr).cookie(h.config.TokenCookieName))
   } else {
+    if user==nil {
+      glog.Errorf("user is nil in login")
+    }
     http.Error(w, "Invalid userid or nonce", http.StatusUnauthorized)
     return
   }

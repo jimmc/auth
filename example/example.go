@@ -76,7 +76,7 @@ func newOpenHandler(prefix string) http.Handler {
 
 // We can add any additional functions to this handler that we
 // want to require authentication.
-func newApiHandler(prefix string, authHandler auth.Handler) http.Handler {
+func newApiHandler(prefix string, authHandler *auth.Handler) http.Handler {
   mux := http.NewServeMux()
   mux.HandleFunc(prefix + "secret", secret)
   mux.HandleFunc(prefix + "edit", authHandler.RequirePermissionFunc(edit,CanEdit))
