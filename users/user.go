@@ -5,29 +5,29 @@ import (
 )
 
 type User struct {
-  userid string
-  cryptword string
+  username string
+  saltword string
   perms *permissions.Permissions
 }
 
-func NewUser(userid, cryptword string, perms *permissions.Permissions) *User {
+func NewUser(username, saltword string, perms *permissions.Permissions) *User {
   return &User{
-    userid: userid,
-    cryptword: cryptword,
+    username: username,
+    saltword: saltword,
     perms: perms,
   }
 }
 
-func (u *User) Cryptword() string {
-  return u.cryptword
+func (u *User) Saltword() string {
+  return u.saltword
 }
 
-func (u *User) SetCryptword(cryptword string) {
-  u.cryptword = cryptword
+func (u *User) SetSaltword(saltword string) {
+  u.saltword = saltword
 }
 
 func (u *User) Id() string {
-  return u.userid
+  return u.username
 }
 
 func (u *User) HasPermission(perm permissions.Permission) bool {

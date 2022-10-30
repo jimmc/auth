@@ -9,7 +9,7 @@ import (
 type Store interface {
     Load() error           // Load our data before other operations
     Save() error           // Save our data after other operations
-    User(userid string) *users.User         // Retrieve a user record by id
-    SetCryptword(userid, cryptword string)  // Set the cryptword for a user
+    User(username string) *users.User         // Retrieve a user record by id
+    SetSaltword(username, saltword string)  // Set the saltword for a user
     UserCount() int             // Get the number of users in our records
 }

@@ -46,7 +46,7 @@ func (pf *PwFile) Load() error {
     return fmt.Errorf("error opening password file %s: %v", pf.filename, err)
   }
   r := csv.NewReader(bufio.NewReader(f))
-  r.FieldsPerRecord = 3         // userid, password, permissions
+  r.FieldsPerRecord = 3         // username, password, permissions
 
   records, err := r.ReadAll()
   if err != nil {
@@ -88,11 +88,11 @@ func (pf *PwFile) Save() error {
 func (pf *PwFile) recordsToUsers(records [][]string) map[string]*users.User {
   uu := make(map[string]*users.User)
   for _, record := range records {
-    userid := record[0]
-    cryptword := record[1]
+    username := record[0]
+    saltword := record[1]
     perms := permissions.FromString(record[2])
-    user := users.NewUser(userid, cryptword, perms)
-    uu[userid] = user
+    user := users.NewUser(username, saltword, perms)
+    uu[username] = user
   }
   return uu
 }
@@ -102,17 +102,17 @@ func (pf *PwFile) usersToRecords(uu *users.Users) [][]string {
   records := make([][]string, count, count)
   ua := uu.ToArray()
   for n, u := range ua {
-    records[n] = []string{ u.Id(), u.Cryptword(), u.PermissionsString() }
+    records[n] = []string{ u.Id(), u.Saltword(), u.PermissionsString() }
   }
   return records
 }
 
-func (pf *PwFile) User(userid string) *users.User {
-  return pf.users.User(userid)
+func (pf *PwFile) User(username string) *users.User {
+  return pf.users.User(username)
 }
 
-func (pf *PwFile) SetCryptword(userid, cryptword string) {
-  pf.users.SetCryptword(userid, cryptword)
+func (pf *PwFile) SetSaltword(username, saltword string) {
+  pf.users.SetSaltword(username, saltword)
 }
 
 func (pf *PwFile) UserCount() int {

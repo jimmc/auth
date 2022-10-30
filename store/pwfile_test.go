@@ -73,12 +73,12 @@ func TestUpdateUser(t *testing.T) {
   if got, want := pwStore.User("user1"), nilUser; got != want {
     t.Errorf("user1 before being created: got %v, want %v", got, want)
   }
-  pwStore.SetCryptword("user1", "cw1")
+  pwStore.SetSaltword("user1", "cw1")
   if got, want := pwStore.UserCount(), 1; got != want {
     t.Errorf("user count after adding user1: got %d, want %d", got, want)
   }
-  if got, want := pwStore.User("user1").Cryptword(), "cw1"; got != want {
-    t.Errorf("user1 Cryptword after being added: got %v, want %v", got, want)
+  if got, want := pwStore.User("user1").Saltword(), "cw1"; got != want {
+    t.Errorf("user1 Saltword after being added: got %v, want %v", got, want)
   }
 }
 
@@ -129,14 +129,14 @@ func TestLoadSaveFile(t *testing.T) {
   if got, want := pw.UserCount(), 2; got != want {
     t.Fatalf("user count in password file %s: got %d, want %d", pwfile, got, want)
   }
-  if got, want := pw.User("user1").Cryptword(), "d761bfe5ffda189a8f1c2212c5fb3fe65274a070d0b1c4f4ec6c2c020db5f22b";
+  if got, want := pw.User("user1").Saltword(), "d761bfe5ffda189a8f1c2212c5fb3fe65274a070d0b1c4f4ec6c2c020db5f22b";
       got != want {
     t.Errorf("cryptword for user1: got %s, want %s", got, want)
   }
 
   perms := permissions.FromString("something")
   pw.users.AddUser("user3", "cw3", perms)
-  pw.users.SetCryptword("user2", "cw2")
+  pw.users.SetSaltword("user2", "cw2")
 
   if got, want := pw.users.HasPermission("user3", CanDoSomething), true; got !=want {
     t.Errorf("something permission for user3: got %v, want %v", got, want)

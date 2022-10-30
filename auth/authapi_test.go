@@ -4,9 +4,7 @@ import (
   "encoding/json"
   "net/http"
   "net/http/httptest"
-  "strconv"
   "testing"
-  "time"
 
   "github.com/jimmc/auth/permissions"
   "github.com/jimmc/auth/store"
@@ -21,7 +19,6 @@ func TestRequireAuth(t *testing.T) {
     Prefix: "/pre/",
     Store: pf,
     TokenCookieName: "test_cookie",
-    MaxClockSkewSeconds: 2,
   })
 
   req, err := http.NewRequest("GET", "/api/list/d1", nil)
@@ -83,7 +80,7 @@ func TestRequireAuth(t *testing.T) {
     t.Errorf("authenicated request should carry a current user")
   }
   if got, want := reqUser.Id(), user.Id(); got != want {
-    t.Errorf("authenticated userid: got %s, want %s", got, want)
+    t.Errorf("authenticated username: got %s, want %s", got, want)
   }
   if got, want := reqUser.HasPermission(CanDoSomething), false; got != want {
     t.Errorf("permission for CanDoSomething: got %v, want %v", got, want)
@@ -137,7 +134,6 @@ func TestStatus(t *testing.T) {
     Prefix: "/auth/",
     Store: pf,
     TokenCookieName: "test_cookie",
-    MaxClockSkewSeconds: 2,
   })
   req, err := http.NewRequest("GET", "/auth/status", nil)   // path is ignored
   if err != nil {
@@ -167,39 +163,69 @@ func TestLogin(t *testing.T) {
     Prefix: "/auth/",
     Store: pf,
     TokenCookieName: "test_cookie",
-    MaxClockSkewSeconds: 2,
   })
   // Define our login info for the HTTP request. The auth code uses
   // FormValue(key) to get the values. We can set those values here
   // using URL query parameters.
   username := "user3"
   password := "pw3"
-  cryptword := sha256sum(username + "-" + password)
-  seconds := time.Now().Unix()          // Seconds since the epoch.
-  secondsstr := strconv.FormatInt(seconds, 10)
-  nonceInput := cryptword + "-" + secondsstr
-  nonce := sha256sum(nonceInput);
-  queryParmString := "userid=" + username + "&nonce=" + nonce + "&time=" + secondsstr
-  url := "/auth/login?" + queryParmString
-  req, err := http.NewRequest("GET", url, nil)
+  hashword := sha256sum(username + "/" + password)
+  queryParmString := "username=" + username + "&hashword=" + hashword
+  loginUrl := "/auth/login?" + queryParmString
+  req, err := http.NewRequest("GET", loginUrl, nil)
   if err != nil {
-    t.Fatalf("error create auth list request: %v", err)
+    t.Fatalf("error creating auth login request: %v", err)
   }
 
   rr := httptest.NewRecorder()
   h.login(rr, req)
   body := rr.Body.Bytes()
   if len(body) == 0 {
-    t.Fatalf("response body should not be empty")
+    t.Fatalf("login response body should not be empty")
   }
   if got, want := rr.Code, http.StatusOK; got != want {
     t.Fatalf("login failed: got status %d, want %d; response is %q", got, want, string(body))
   }
   result := &LoginStatus{}
   if err := json.Unmarshal(body, result); err != nil {
-    t.Errorf("error unmarshalling json result: %v; response is %q", err, string(body))
+    t.Errorf("error unmarshalling login json result: %v; response is %q", err, string(body))
   }
   if got, want := result.LoggedIn, true; got != want {
     t.Errorf("wrong login status: got %v, want %v", got, want)
+  }
+
+  logoutUrl := "/auth/logout"
+  req, err = http.NewRequest("GET", logoutUrl, nil)
+  if err != nil {
+    t.Fatalf("error creating auth logout request: %v", err)
+  }
+  rr = httptest.NewRecorder()
+  h.logout(rr, req)
+  body = rr.Body.Bytes()
+  if len(body) == 0 {
+    t.Fatalf("logout response body should not be empty")
+  }
+
+  var logoutResult map[string]interface{}
+  if err := json.Unmarshal(body, &logoutResult); err != nil {
+    t.Errorf("error unmarshalling logout json result: %v", err)
+  }
+  if got, want := logoutResult["status"], "ok"; got != want {
+    t.Errorf("wrong logout status: got %v, want %v", got, want)
+  }
+
+  // Check the status while not logged in.
+  rr = httptest.NewRecorder()
+  h.status(rr, req)
+  body = rr.Body.Bytes()
+  if len(body) == 0 {
+    t.Fatalf("status response body should not be empty")
+  }
+  result = &LoginStatus{}
+  if err := json.Unmarshal(body, result); err != nil {
+    t.Errorf("error unmarshalling status json result: %v", err)
+  }
+  if got, want := result.LoggedIn, false; got != want {
+    t.Errorf("wrong login status after logout: got %v, want %v", got, want)
   }
 }

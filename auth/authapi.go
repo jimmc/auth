@@ -5,7 +5,6 @@ import (
   "encoding/json"
   "fmt"
   "net/http"
-  "strconv"
   "time"
 
   "github.com/golang/glog"
@@ -116,20 +115,13 @@ func (h *Handler) apiPrefix(s string) string {
 }
 
 func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
-  userid := r.FormValue("userid")
-  glog.V(4).Infof("login userid=%s", userid)
-  nonce := r.FormValue("nonce")
-  glog.V(4).Infof("login nonce=%s", nonce)
-  timestr := r.FormValue("time")
-  glog.V(4).Infof("login time=%s", timestr)
-  seconds, err := strconv.ParseInt(timestr, 10, 64)
-  if err != nil {
-    glog.Errorf("Error converting time string '%s': %v\n", timestr, err)
-    seconds = 0
-  }
+  username := r.FormValue("username")
+  glog.V(4).Infof("login username=%s", username)
+  hashword := r.FormValue("hashword")
+  glog.V(4).Infof("login hashword=%s", hashword)
 
-  user := h.config.Store.User(userid)
-  if user != nil && h.nonceIsValidNow(userid, nonce, seconds) {
+  user := h.config.Store.User(username)
+  if user != nil && h.hashwordIsValid(username, hashword) {
     // OK to log in; generate a bearer token and put in a cookie
     idstr := clientIdString(r)
     http.SetCookie(w, newToken(user, idstr).cookie(h.config.TokenCookieName))
@@ -137,7 +129,7 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
     if user==nil {
       glog.Errorf("user is nil in login")
     }
-    http.Error(w, "Invalid userid or nonce", http.StatusUnauthorized)
+    http.Error(w, "Invalid username or password", http.StatusUnauthorized)
     return
   }
 

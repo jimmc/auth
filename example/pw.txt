@@ -4,6 +4,6 @@
 # Password for user2 is pw2 - user2 has 'edit' permission ,,
 # Password for user3 is pw3 - user3 has 'root' permission ,,
 # Generate password 'pw1' for user1: echo -n 'user1-pw1' | sha256sum  ,,
-user1,d761bfe5ffda189a8f1c2212c5fb3fe65274a070d0b1c4f4ec6c2c020db5f22b,
-user2,8b586163aa4520e91925dbcb9b37961d17a7d1aba3b58d7400fd43d913c6dc5c,edit
-user3,c35c214d0785975abc510297463b52ff385e6664c638d6b927cd449f3d2e7515,root
+user1,1234567812345678/f4f6c67381790d4771ce3c491def24f106afc3f20ffd9ba3fdf308b11ba0e4ea,
+user2,1111222233334444/959b651fe6cb6a384a93e42cfd1e17f1868e1c0f09f781ea746c9a27b7a6d39c,edit
+user3,1122334455667788/758422072100bf464d35edb8ddbe2a2b4a66df9db066c96d216c8743e1487c34,root

@@ -4,7 +4,6 @@ import (
   "io/ioutil"
   "os"
   "testing"
-  "time"
 
   "github.com/jimmc/auth/store"
 )
@@ -20,7 +19,6 @@ func makeTestConfig(t *testing.T) (*Config, *os.File) {
   c := &Config{
     Prefix: "/pre/",
     Store: pwStore,
-    MaxClockSkewSeconds: 2,
   }
   return c, pf
 }
@@ -77,9 +75,9 @@ func TestPasswordFile(t *testing.T) {
     t.Errorf("failed to create password file")
   }
 
-  cw := h.getCryptword("user1")
-  if cw != "" {
-    t.Errorf("user1 should have no cryptword before being set")
+  sw := h.getSaltword("user1")
+  if sw != "" {
+    t.Errorf("user1 should have no saltword before being set")
   }
   err = h.UpdatePassword("user1", "abcd")
   if err != nil {
@@ -89,8 +87,18 @@ func TestPasswordFile(t *testing.T) {
   if err != nil {
     t.Errorf("failed to load password file after updating: %v", err)
   }
-  if got, want := h.getCryptword("user1"), h.generateCryptword("user1", "abcd"); got != want {
-    t.Errorf("user cryptword after saving: got %s, want %s", got, want)
+  sw = h.getSaltword("user1")
+  if sw == "" {
+    t.Errorf("user1 should have saltword after being set")
+  }
+  salt := h.getSaltFromSaltword(sw)
+  if salt == "" {
+    t.Errorf("Blank salt after setting saltword")
+  }
+  hashword := h.generateHashword("user1", "abcd")
+  wantsw := h.generateSaltword(salt, hashword)
+  if got, want := sw, wantsw; got!=want {
+    t.Errorf("user saltword after saving: got %s, want %s", got, want)
   }
 
   // Saving the password file after a change is done by creating a new temp
@@ -119,7 +127,6 @@ func TestMissingPasswordFile(t *testing.T) {
   c := &Config{
     Prefix: "/pre/",
     Store: pwStore,
-    MaxClockSkewSeconds: 2,
   }
   h := NewHandler(c)
   err := h.loadUsers()
@@ -132,85 +139,51 @@ func TestMissingPasswordFile(t *testing.T) {
   }
 }
 
-func TestCryptword(t *testing.T) {
+func TestHashing(t *testing.T) {
   testConfig, pf := makeTestConfig(t)
   defer os.Remove(pf.Name())    // clean up
   h := NewHandler(testConfig)
-  cw := h.getCryptword("user1")
+
+  salt, err := h.generateSalt()
+  if err != nil {
+    t.Errorf("generateSalt returned error: %v", err)
+  } else if got, want := len(salt), 16; got!=want {
+    t.Errorf("salt length: got %d, want %d", got, want)
+  }
+
+  if got, want := h.generateHashword("a", "b"), "c14cddc033f64b9dea80ea675cf280a015e672516090a5626781153dc68fea11"; got!=want {
+    t.Errorf("hashword: got %s, want %s", got, want)
+  }
+
+  if got, want := h.generateSaltword("abc", "def"), "abc/3c56f20931870aab85951364886aef949368f5f12d572ea95f5ca96a280944e6"; got!=want {
+    t.Errorf("saltword: got %s, want %s", got, want)
+  }
+
+  if got, want := h.getSaltFromSaltword("abc/def"), "abc"; got!=want {
+    t.Errorf("getSaltFromSaltword: got %s, want %s", got, want)
+  }
+  if got, want := h.getSaltFromSaltword("abcdef"), ""; got!=want {
+    t.Errorf("getSaltFromSaltword with no separator: got %s, want empty string", got)
+  }
+}
+
+func TestSaltword(t *testing.T) {
+  testConfig, pf := makeTestConfig(t)
+  defer os.Remove(pf.Name())    // clean up
+  h := NewHandler(testConfig)
+  cw := h.getSaltword("user1")
   if cw != "" {
-    t.Errorf("cryptword for unknown user should be blank")
+    t.Errorf("saltword for unknown user should be blank")
   }
-  h.setCryptword("user1", "abcdef")
-  cw = h.getCryptword("user1")
+  h.setSaltword("user1", "abcdef")
+  cw = h.getSaltword("user1")
   if cw != "abcdef" {
-    t.Errorf("cryptword should be equal to what was previously set")
+    t.Errorf("saltword should be equal to what was previously set")
   }
-  h.setCryptword("user1", "ghi")
-  cw = h.getCryptword("user1")
+  h.setSaltword("user1", "ghi")
+  cw = h.getSaltword("user1")
   if cw != "ghi" {
-    t.Errorf("cryptword should be equal to new value")
-  }
-}
-
-func TestGenerateNonceAtTime(t *testing.T) {
-  testConfig, pf := makeTestConfig(t)
-  defer os.Remove(pf.Name())    // clean up
-  h := NewHandler(testConfig)
-  t0 := int64(1000000)
-  t1 := t0 + 1
-  nonce0 := h.generateNonceAtTime("user1", t0)
-  if nonce0 == "" {
-    t.Errorf("nonce should not be empty")
-  }
-  nonce1 := h.generateNonceAtTime("user1", t1)
-  if nonce0 == nonce1 {
-    t.Errorf("nonces generated at different times should be different")
-  }
-}
-
-func TestNonceIsValidAtTime(t *testing.T) {
-  testConfig, pf := makeTestConfig(t)
-  defer os.Remove(pf.Name())    // clean up
-  h := NewHandler(testConfig)
-  t0 := int64(1000000)
-  t1 := t0 + 1
-  nonce := h.generateNonceAtTime("user1", t0)
-  if !h.nonceIsValidAtTime("user1", nonce, t0) {
-    t.Errorf("nonce should be valid at same time as generated")
-  }
-  if h.nonceIsValidAtTime("user1", nonce, t1) {
-    t.Errorf("nonce should not be valid at different time as generated")
-  }
-}
-
-func TestNonceIsValidNow(t *testing.T) {
-  testConfig, pf := makeTestConfig(t)
-  defer os.Remove(pf.Name())    // clean up
-  h := NewHandler(testConfig)
-  t0 := int64(1000000)
-  t1 := t0
-  oldTimeNow := timeNow
-  timeNow = func() time.Time { return time.Unix(t1, 0) }
-  defer func(){timeNow=oldTimeNow}()    // Restore the time function
-  nonce := h.generateNonceAtTime("user1", t1)
-  if !h.nonceIsValidNow("user1", nonce, t0) {
-    t.Errorf("nonce should be valid at same time as generated")
-  }
-  t1 = t0 + 1
-  if !h.nonceIsValidNow("user1", nonce, t0) {
-    t.Errorf("nonce should be valid at earlier time within skew")
-  }
-  t1 = t0 - 1
-  if !h.nonceIsValidNow("user1", nonce, t0) {
-    t.Errorf("nonce should be valid at later time within skew")
-  }
-  t1 = t0 - int64(testConfig.MaxClockSkewSeconds) - 1
-  if h.nonceIsValidNow("user1", nonce, t0) {
-    t.Errorf("nonce should not be valid at earlier time outside skew")
-  }
-  t1 = t0 + int64(testConfig.MaxClockSkewSeconds) + 1
-  if h.nonceIsValidNow("user1", nonce, t0) {
-    t.Errorf("nonce should not be valid at later time outside skew")
+    t.Errorf("saltword should be equal to new value")
   }
 }
 

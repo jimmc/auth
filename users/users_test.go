@@ -14,7 +14,7 @@ func TestEmpty(t *testing.T) {
     t.Errorf("user count for initial Empty: got %d, want %d", got, want)
   }
   emptyPerms := permissions.FromString("")
-  m.AddUser("user1", "crypt1", emptyPerms)
+  m.AddUser("user1", "salt1", emptyPerms)
   if got, want := m.UserCount(), 1; got != want {
     t.Errorf("user count after adding a user: got %d, want %d", got, want)
   }
@@ -58,19 +58,19 @@ func TestUserData(t *testing.T) {
     t.Errorf("wrong permission for user3: got %v, want %v", got, want)
   }
 
-  if got, want := uu.Cryptword("user1"), "foo"; got != want {
-    t.Errorf("wrong cryptword for user1: got %q, want %q", got, want)
+  if got, want := uu.Saltword("user1"), "foo"; got != want {
+    t.Errorf("wrong saltword for user1: got %q, want %q", got, want)
   }
-  uu.SetCryptword("user1", "xxx")
-  if got, want := uu.Cryptword("user1"), "xxx"; got != want {
-    t.Errorf("wrong updated cryptword for user1: got %q, want %q", got, want)
+  uu.SetSaltword("user1", "xxx")
+  if got, want := uu.Saltword("user1"), "xxx"; got != want {
+    t.Errorf("wrong updated saltword for user1: got %q, want %q", got, want)
   }
 
-  if got, want := uu.Cryptword("user3"), ""; got != want {
-    t.Errorf("wrong cryptword for user3: got %q, want %q", got, want)
+  if got, want := uu.Saltword("user3"), ""; got != want {
+    t.Errorf("wrong saltword for user3: got %q, want %q", got, want)
   }
-  uu.SetCryptword("user3", "yyy")
-  if got, want := uu.Cryptword("user3"), "yyy"; got != want {
-    t.Errorf("wrong updated cryptword for user3: got %q, want %q", got, want)
+  uu.SetSaltword("user3", "yyy")
+  if got, want := uu.Saltword("user3"), "yyy"; got != want {
+    t.Errorf("wrong updated saltword for user3: got %q, want %q", got, want)
   }
 }

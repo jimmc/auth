@@ -52,8 +52,8 @@ func TestDbUpdateUser(t *testing.T) {
   if got, want := pdb.User("user1"), nilUser; got != want {
     t.Errorf("user1 before being created: got %v, want %v", got, want)
   }
-  // user1 does not exist; first call to SetCryptword creates it.
-  pdb.SetCryptword("user1", "cw1")
+  // user1 does not exist; first call to SetSaltword creates it.
+  pdb.SetSaltword("user1", "cw1")
   if got, want := pdb.UserCount(), 1; got != want {
     t.Errorf("user count after adding user1: got %d, want %d", got, want)
   }
@@ -61,16 +61,16 @@ func TestDbUpdateUser(t *testing.T) {
   if u1 == nil {
     t.Fatalf("expected user1, got nil")
   }
-  if got, want := u1.Cryptword(), "cw1"; got != want {
-    t.Errorf("user1 Cryptword after being added: got %v, want %v", got, want)
+  if got, want := u1.Saltword(), "cw1"; got != want {
+    t.Errorf("user1 Saltword after being added: got %v, want %v", got, want)
   }
-  // user1 exists, so this call to SetCryptword updates it.
-  pdb.SetCryptword("user1", "cw1b")
+  // user1 exists, so this call to SetSaltword updates it.
+  pdb.SetSaltword("user1", "cw1b")
   u1 = pdb.User("user1")       // Get the user again after making this change.
   if u1 == nil {
     t.Fatalf("expected user1, got nil")
   }
-  if got, want := u1.Cryptword(), "cw1b"; got != want {
-    t.Errorf("user1 Cryptword after being updated: got %v, want %v", got, want)
+  if got, want := u1.Saltword(), "cw1b"; got != want {
+    t.Errorf("user1 Saltword after being updated: got %v, want %v", got, want)
   }
 }

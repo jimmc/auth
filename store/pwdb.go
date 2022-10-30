@@ -39,39 +39,39 @@ func (pdb *PwDB) Save(_ *users.Users) error {
   return nil
 }
 
-func (pdb *PwDB) User(userid string) *users.User {
+func (pdb *PwDB) User(username string) *users.User {
   query := "SELECT cryptword, permissions FROM user WHERE id = :id"
   var cryptword string
   var perms string
-  err := pdb.db.QueryRow(query,sql.Named("id", userid)).Scan(&cryptword, &perms)
+  err := pdb.db.QueryRow(query,sql.Named("id", username)).Scan(&cryptword, &perms)
   if err == sql.ErrNoRows {
-    return nil          // No matching userid found
+    return nil          // No matching username found
   }
   if err != nil {
-    glog.Errorf("Error scanning for user %q: %v\n", userid, err)
+    glog.Errorf("Error scanning for user %q: %v\n", username, err)
     return nil
   }
-  user := users.NewUser(userid, cryptword, permissions.FromString(perms))
+  user := users.NewUser(username, cryptword, permissions.FromString(perms))
   return user
 }
 
-func (pdb *PwDB) SetCryptword(userid, cryptword string) {
-  if userid == "" {
-    glog.Errorf("Can't SetCryptword with no userid\n")
+func (pdb *PwDB) SetSaltword(username, cryptword string) {
+  if username == "" {
+    glog.Errorf("Can't SetSaltword with no username\n")
     return
   }
   // Assume row does not exist, try to insert it.
   iQuery := `INSERT into user(id,cryptword,permissions) values(:id, :cw, "");`
-  _, err := pdb.db.Exec(iQuery,sql.Named("cw", cryptword),sql.Named("id", userid))
+  _, err := pdb.db.Exec(iQuery,sql.Named("cw", cryptword),sql.Named("id", username))
   if err == nil {
     return      // Succeeded
   }
   glog.Infof("INSERT returned err=%v\n", err)   // Expected if the user already exists.
   // If the INSERT failed, assume it was because the row already exists, so try updating it.
   query := "UPDATE user SET cryptword = :cw WHERE id = :id;"
-  _, err = pdb.db.Exec(query,sql.Named("cw", cryptword),sql.Named("id", userid))
+  _, err = pdb.db.Exec(query,sql.Named("cw", cryptword),sql.Named("id", username))
   if err != nil {
-    glog.Errorf("Error setting cryptword for user %q: %v\n", userid, err)
+    glog.Errorf("Error setting cryptword for user %q: %v\n", username, err)
   }
 }
 

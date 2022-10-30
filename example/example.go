@@ -37,7 +37,6 @@ func doMain() int {
     Prefix: authPrefix,
     Store: authStore,
     TokenCookieName: "AUTH_EXAMPLE",
-    MaxClockSkewSeconds: maxClockSkewSeconds,
   })
 
   apiPrefix := "/api/"

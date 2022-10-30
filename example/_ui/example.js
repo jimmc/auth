@@ -20,16 +20,12 @@ class Example {
       alert("Please enter a username and a password")
       return
     }
-    const seconds = Math.floor(Date.now()/1000);
-    const cryptword = Example.sha256sum(username + "-" + password);
-    const shaInput = cryptword + "-" + seconds.toString();
-    const nonce = Example.sha256sum(shaInput);
+    const hashword = Example.sha256sum(username + "/" + password);
     try {
       const loginUrl = "/auth/login/";
       const formData = new FormData();
-      formData.append("userid", username);
-      formData.append("nonce", nonce);
-      formData.append("time", seconds.toString());
+      formData.append("username", username);
+      formData.append("hashword", hashword);
       const options = {
         method: "POST",
         params: formData,

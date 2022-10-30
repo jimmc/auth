@@ -15,6 +15,10 @@ const (
 )
 
 var (
+  timeNow = time.Now            // Allow overriding for unit testing.
+)
+
+var (
   tokens map[string]*Token
 )
 
