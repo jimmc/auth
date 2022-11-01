@@ -5,6 +5,7 @@ package main
 
 import (
   "encoding/json"
+  "flag"
   "fmt"
   "net/http"
   "os"
@@ -31,6 +32,10 @@ func main() {
 
 // doMain return 0 if the program is exiting with no errors.
 func doMain() int {
+  updatePasswordP := flag.String("updatepassword", "", "update password for named user")
+
+  flag.Parse()
+
   authPrefix := "/auth/"
   authStore := store.NewPwFile(passwordFilePath)
   authHandler := auth.NewHandler(&auth.Config{
@@ -38,6 +43,16 @@ func doMain() int {
     Store: authStore,
     TokenCookieName: "AUTH_EXAMPLE",
   })
+
+  if (*updatePasswordP != "") {
+    err := authHandler.UpdateUserPassword(*updatePasswordP)
+    if err != nil {
+      fmt.Printf("Error updating password for %s: %v\n", *updatePasswordP, err)
+      return 1
+    }
+    fmt.Printf("Password updated for %s\n", *updatePasswordP)
+    return 0
+  }
 
   apiPrefix := "/api/"
   apiHandler := newApiHandler(apiPrefix, authHandler )  // We will require auth for these calls.

@@ -91,14 +91,9 @@ func TestPasswordFile(t *testing.T) {
   if sw == "" {
     t.Errorf("user1 should have saltword after being set")
   }
-  salt := h.getSaltFromSaltword(sw)
-  if salt == "" {
-    t.Errorf("Blank salt after setting saltword")
-  }
   hashword := h.generateHashword("user1", "abcd")
-  wantsw := h.generateSaltword(salt, hashword)
-  if got, want := sw, wantsw; got!=want {
-    t.Errorf("user saltword after saving: got %s, want %s", got, want)
+  if !h.hashwordIsValid("user1", hashword) {
+    t.Errorf("hashword should be valid after saltword round trip")
   }
 
   // Saving the password file after a change is done by creating a new temp
@@ -136,34 +131,6 @@ func TestMissingPasswordFile(t *testing.T) {
   err = h.UpdatePassword("user1", "abcd")
   if err == nil {
     t.Errorf("expected error updating password, did not get error")
-  }
-}
-
-func TestHashing(t *testing.T) {
-  testConfig, pf := makeTestConfig(t)
-  defer os.Remove(pf.Name())    // clean up
-  h := NewHandler(testConfig)
-
-  salt, err := h.generateSalt()
-  if err != nil {
-    t.Errorf("generateSalt returned error: %v", err)
-  } else if got, want := len(salt), 16; got!=want {
-    t.Errorf("salt length: got %d, want %d", got, want)
-  }
-
-  if got, want := h.generateHashword("a", "b"), "c14cddc033f64b9dea80ea675cf280a015e672516090a5626781153dc68fea11"; got!=want {
-    t.Errorf("hashword: got %s, want %s", got, want)
-  }
-
-  if got, want := h.generateSaltword("abc", "def"), "abc/3c56f20931870aab85951364886aef949368f5f12d572ea95f5ca96a280944e6"; got!=want {
-    t.Errorf("saltword: got %s, want %s", got, want)
-  }
-
-  if got, want := h.getSaltFromSaltword("abc/def"), "abc"; got!=want {
-    t.Errorf("getSaltFromSaltword: got %s, want %s", got, want)
-  }
-  if got, want := h.getSaltFromSaltword("abcdef"), ""; got!=want {
-    t.Errorf("getSaltFromSaltword with no separator: got %s, want empty string", got)
   }
 }
 

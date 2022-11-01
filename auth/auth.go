@@ -6,24 +6,25 @@
 // over the wire in plaintext, although it doesn't provide any
 // real security, since an attacker who gets the hashword can just
 // send it directly rather than producing it from the password.
-// The server looks up the username in its database and retrieves
-// the aaltword, in which the first some characters are the salt.
-// That salt is composed with the hashword and passed through
-// sha256, and the result is compared to the remainder of the saltword.
-// If they match, the user is authenticated.
+// We pass that hashword through bcrypt, which adds a salt and
+// hashes again, and we save that value as our saltword.
+// During authentication, the client gets the password from the
+// user and generates the hashword, which it sends to the server along
+// with the username. The server looks up the username in its database
+// and retrieves the saltword. The saltword and the hashword are passed
+// to bcrypt's comparison function. If they match, the user is authenticated.
 
 package auth
 
 import (
-  "crypto/rand"
   "crypto/sha256"
   "encoding/hex"
   "fmt"
   "net/http"
-  "strings"
   "syscall"
 
   "github.com/golang/glog"
+  "golang.org/x/crypto/bcrypt"
   "golang.org/x/crypto/ssh/terminal"
 
   "github.com/jimmc/auth/store"
@@ -39,6 +40,8 @@ type Handler struct {
   ApiHandler http.Handler
   config *Config
 }
+
+const bcryptCost = 12   // The cost factor we pass to bcrypt.GenerateFromPassword.
 
 func NewHandler(c *Config) *Handler {
   h := &Handler{config: c}
@@ -80,18 +83,17 @@ func (h *Handler) UpdateUserPassword(username string) error {
 }
 
 // Set the saltword for a user into our database based on the username
-// and the given password, with a randomly generated salt..
+// and the given password, with a randomly generated salt.
 func (h *Handler) UpdatePassword(username, password string) error {
   err := h.loadUsers()
   if err != nil {
     return err
   }
   hashword := h.generateHashword(username, password)
-  salt, err := h.generateSalt()
+  saltword, err := h.generateSaltword(hashword)
   if err != nil {
     return err
   }
-  saltword := h.generateSaltword(salt, hashword)
   h.setSaltword(username, saltword)
   err = h.saveUsers()
   if err != nil {
@@ -126,36 +128,27 @@ func (h *Handler) generateHashword(username, password string) string {
 }
 
 func (h *Handler) hashwordIsValid(username, hashword string) bool {
-  actualSaltword := h.getSaltword(username)
-  salt := h.getSaltFromSaltword(actualSaltword)
-  proposedSaltword := h.generateSaltword(salt, hashword)
-  glog.V(4).Infof("actualSaltword=%q", actualSaltword)
-  glog.V(4).Infof("proposedSaltword=%q", proposedSaltword)
-  return proposedSaltword == actualSaltword
+  saltword := h.getSaltword(username)
+  saltwordBytes, err := hex.DecodeString(saltword)
+  if err != nil {
+    glog.V(4).Infof("error converting saltword to bytes: %v", err)
+    return false
+  }
+  err = bcrypt.CompareHashAndPassword(saltwordBytes, []byte(hashword))
+  if err != nil {
+    glog.V(4).Infof("password compare failed: %v", err)
+    return false
+  }
+  return true
 }
 
-func (h *Handler) generateSalt() (string, error) {
-  c := 8
-  b := make([]byte, c)
-  _, err := rand.Read(b)
+func (h *Handler) generateSaltword(hashword string) (string, error) {
+  // bcrypt adds random salt as includes that in the returned bytes.
+  saltwordBytes, err :=  bcrypt.GenerateFromPassword([]byte(hashword), bcryptCost)
   if err != nil {
     return "", err
   }
-  salt, err := hex.EncodeToString(b), nil
-  glog.V(4).Infof("New salt=%s", salt)
-  return salt, err
-}
-
-func (h *Handler) getSaltFromSaltword(saltword string) string {
-  i := strings.Index(saltword, "/")
-  if i<0 {
-    return ""           // No salt found
-  }
-  return saltword[:i]
-}
-
-func (h *Handler) generateSaltword(salt, hashword string) string {
-  return salt + "/" + sha256sum(salt + "/" + hashword)
+  return hex.EncodeToString(saltwordBytes), nil
 }
 
 func sha256sum(s string) string {
