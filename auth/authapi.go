@@ -70,6 +70,7 @@ func (h *Handler) RequirePermission(httpHandler http.Handler, perm permissions.P
     }
     token.updateTimeout()
     http.SetCookie(w, token.cookie(h.config.TokenCookieName)) // Set the renewed cookie
+    http.SetCookie(w, token.timeoutCookie(h.config.TokenCookieName)) // Set the timeout cookie
     user := token.User()
     rwcu := requestWithContextUser(r, user)
     httpHandler.ServeHTTP(w, rwcu)
@@ -124,7 +125,9 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
   if user != nil && h.hashwordIsValid(username, hashword) {
     // OK to log in; generate a bearer token and put in a cookie
     idstr := clientIdString(r)
-    http.SetCookie(w, newToken(user, idstr).cookie(h.config.TokenCookieName))
+    token := newToken(user, idstr)
+    http.SetCookie(w, token.cookie(h.config.TokenCookieName))
+    http.SetCookie(w, token.timeoutCookie(h.config.TokenCookieName))
   } else {
     if user==nil {
       glog.Errorf("user is nil in login")
@@ -154,7 +157,14 @@ func (h *Handler) logout(w http.ResponseWriter, r *http.Request) {
     Value: "",
     Expires: time.Now().AddDate(-1, 0, 0),
   }
+  timeoutCookie := &http.Cookie{
+    Name: h.config.TokenCookieName+"_TIMEOUT",
+    Path: "/",
+    Value: "",
+    Expires: time.Now().AddDate(-1, 0, 0),
+  }
   http.SetCookie(w, tokenCookie)
+  http.SetCookie(w, timeoutCookie)
   w.WriteHeader(http.StatusOK)
   w.Write([]byte(`{"status": "ok"}`))
 }
@@ -169,6 +179,7 @@ func (h *Handler) status(w http.ResponseWriter, r *http.Request) {
   if loggedIn {
     token.updateTimeout()
     http.SetCookie(w, token.cookie(h.config.TokenCookieName)) // Set the renewed cookie
+    http.SetCookie(w, token.timeoutCookie(h.config.TokenCookieName))
     result.Permissions = token.User().PermissionsString()
   }
 

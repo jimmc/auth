@@ -4,6 +4,7 @@ import (
   "fmt"
   "math/rand"
   "net/http"
+  "strconv"
   "time"
 
   "github.com/jimmc/auth/users"
@@ -79,6 +80,7 @@ func (t *Token) User() *users.User {
   return t.user
 }
 
+// cookie creates the HttpOnly cookie that contains our authentication key.
 func (t *Token) cookie(tokenCookieName string) *http.Cookie {
   return &http.Cookie{
     Name: tokenCookieName,
@@ -86,5 +88,16 @@ func (t *Token) cookie(tokenCookieName string) *http.Cookie {
     Value: t.Key,
     Expires: t.timeout,
     HttpOnly: true,
+  }
+}
+
+// timeoutCookie creates a cookie, readable by the client javascript code,
+// with a value that is the truncated number of seconds until our cookies expire.
+func (t *Token) timeoutCookie(tokenCookieName string) *http.Cookie {
+  return &http.Cookie{
+    Name: tokenCookieName + "_TIMEOUT",
+    Path: "/",
+    Value: strconv.Itoa(int(t.timeout.Sub(time.Now()).Seconds())),
+    Expires: t.timeout,
   }
 }
