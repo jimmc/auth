@@ -22,6 +22,7 @@ import (
   "fmt"
   "net/http"
   "syscall"
+  "time"
 
   "github.com/golang/glog"
   "golang.org/x/crypto/bcrypt"
@@ -34,12 +35,20 @@ type Config struct {
   Prefix string                 // The prefix string used for our API calls
   Store store.Store             // The storage module to load and save our data.
   TokenCookieName string        // The name of the cookie we use to store our auth data.
+  TokenTimeoutDuration time.Duration   // Amount of idle time until token times out.
+  TokenExpiryDuration time.Duration    // Amount of time until hard expire of the token.
+
 }
 
 type Handler struct {
   ApiHandler http.Handler
   config *Config
 }
+
+const (
+  defaultTokenTimeoutDuration = time.Duration(1) * time.Hour
+  defaultTokenExpiryDuration = time.Duration(10) * time.Hour
+)
 
 const bcryptCost = 12   // The cost factor we pass to bcrypt.GenerateFromPassword.
 

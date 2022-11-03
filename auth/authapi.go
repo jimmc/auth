@@ -68,7 +68,7 @@ func (h *Handler) RequirePermission(httpHandler http.Handler, perm permissions.P
         return
       }
     }
-    token.updateTimeout()
+    token.updateTimeout(h.config.TokenTimeoutDuration)
     http.SetCookie(w, token.cookie(h.config.TokenCookieName)) // Set the renewed cookie
     http.SetCookie(w, token.timeoutCookie(h.config.TokenCookieName)) // Set the timeout cookie
     user := token.User()
@@ -125,7 +125,7 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
   if user != nil && h.hashwordIsValid(username, hashword) {
     // OK to log in; generate a bearer token and put in a cookie
     idstr := clientIdString(r)
-    token := newToken(user, idstr)
+    token := newToken(user, idstr, h.config.TokenTimeoutDuration, h.config.TokenExpiryDuration)
     http.SetCookie(w, token.cookie(h.config.TokenCookieName))
     http.SetCookie(w, token.timeoutCookie(h.config.TokenCookieName))
   } else {
@@ -177,7 +177,7 @@ func (h *Handler) status(w http.ResponseWriter, r *http.Request) {
     LoggedIn: loggedIn,
   }
   if loggedIn {
-    token.updateTimeout()
+    token.updateTimeout(h.config.TokenTimeoutDuration)
     http.SetCookie(w, token.cookie(h.config.TokenCookieName)) // Set the renewed cookie
     http.SetCookie(w, token.timeoutCookie(h.config.TokenCookieName))
     result.Permissions = token.User().PermissionsString()

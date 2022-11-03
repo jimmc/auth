@@ -10,11 +10,6 @@ import (
   "github.com/jimmc/auth/users"
 )
 
-const (
-  tokenTimeoutDuration = time.Duration(1) * time.Hour
-  tokenExpirationDuration = time.Duration(10) * time.Hour
-)
-
 var (
   timeNow = time.Now            // Allow overriding for unit testing.
 )
@@ -35,12 +30,18 @@ func initTokens() {
   tokens = make(map[string]*Token)
 }
 
-func newToken(user *users.User, idstr string) *Token {
+func newToken(user *users.User, idstr string, timeoutDuration, expiryDuration time.Duration) *Token {
+  if timeoutDuration == 0 {
+    timeoutDuration = defaultTokenTimeoutDuration
+  }
+  if expiryDuration == 0 {
+    expiryDuration = defaultTokenExpiryDuration
+  }
   token := &Token{
     user: user,
     idstr: idstr,
-    timeout: timeNow().Add(tokenTimeoutDuration),
-    expiry: timeNow().Add(tokenExpirationDuration),
+    timeout: timeNow().Add(timeoutDuration),
+    expiry: timeNow().Add(expiryDuration),
   }
   keynum := rand.Intn(1000000)
   token.Key = fmt.Sprintf("%06d", keynum)
@@ -68,8 +69,11 @@ func (t *Token) isValid(idstr string) bool {
 
 // updateTimeout resets the token timeout to be the timeout-duration
 // from now, or the token expiry, whichever comes first.
-func (t *Token) updateTimeout() {
-  timeout := timeNow().Add(tokenTimeoutDuration)
+func (t *Token) updateTimeout(timeoutDuration time.Duration) {
+  if timeoutDuration == 0 {
+    timeoutDuration = defaultTokenTimeoutDuration
+  }
+  timeout := timeNow().Add(timeoutDuration)
   if timeout.After(t.expiry) {
     timeout = t.expiry
   }

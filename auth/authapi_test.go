@@ -69,7 +69,8 @@ func TestRequireAuth(t *testing.T) {
   rr = httptest.NewRecorder()
   user := users.NewUser("user1", "cw1", nil)
   idstr := clientIdString(req)
-  cookie := newToken(user, idstr).cookie(h.config.TokenCookieName)
+  token := newToken(user, idstr, h.config.TokenTimeoutDuration, h.config.TokenExpiryDuration)
+  cookie := token.cookie(h.config.TokenCookieName)
   req.AddCookie(cookie)
   reqUser = nil
   wrappedHandlerF.ServeHTTP(rr, req)
@@ -101,7 +102,8 @@ func TestRequireAuth(t *testing.T) {
   rr = httptest.NewRecorder()
   user = users.NewUser("user1", "cw1", permissions.FromString("something"))
   idstr = clientIdString(req)
-  cookie = newToken(user, idstr).cookie(h.config.TokenCookieName)
+  token = newToken(user, idstr, h.config.TokenTimeoutDuration, h.config.TokenExpiryDuration)
+  cookie = token.cookie(h.config.TokenCookieName)
   req.AddCookie(cookie)
   reqUser = nil
   wrappedFuncT(rr, req)
