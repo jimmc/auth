@@ -37,7 +37,6 @@ type Config struct {
   TokenCookieName string        // The name of the cookie we use to store our auth data.
   TokenTimeoutDuration time.Duration   // Amount of idle time until token times out.
   TokenExpiryDuration time.Duration    // Amount of time until hard expire of the token.
-
 }
 
 type Handler struct {

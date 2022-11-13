@@ -18,9 +18,8 @@ type LoginStatus struct {
   Permissions string
 }
 
-type authKey int
 const (
-  ctxUserKey = iota + 1
+  ctxUserKey = "AuthUser"       // Make it a string that the caller can access. Useful for testing.
 )
 
 func (h *Handler) initApiHandler() {
