@@ -43,3 +43,8 @@ func (u *User) PermissionsString() string {
   }
   return u.perms.ToString()
 }
+
+func (u *User) Permissions() *permissions.Permissions {
+  return u.perms
+}
+

@@ -100,6 +100,7 @@ func requestWithContextUser(r *http.Request, user *users.User) *http.Request {
   return r.WithContext(cwv)
 }
 
+// CurrentUser returns the user from the request context, or nil if no user found there.
 func CurrentUser(r *http.Request) *users.User {
   v := r.Context().Value(ctxUserKey)
   if v == nil {
@@ -108,13 +109,34 @@ func CurrentUser(r *http.Request) *users.User {
   return v.(*users.User)
 }
 
+// CurrentUsername returns the current username, or a placeholder string if
+// there is no current user.
+func CurrentUsername(r *http.Request) string {
+  user := CurrentUser(r)
+  if user == nil {
+    return "(no current user)"
+  }
+  return user.Id()
+}
 
+// CurrentUserHasPermissions returns true if the user from the request context has
+// the specified permission, or false if they do not, or if there is no user found.
 func CurrentUserHasPermission(r *http.Request, perm permissions.Permission) bool {
   user := CurrentUser(r)
   if user == nil {
     return false
   }
   return user.HasPermission(perm)
+}
+
+// CurrentPermissions returns the set of permissions for the user from the
+// request context, or an empty list if there is no user found.
+func CurrentPermissions(r *http.Request) *permissions.Permissions {
+  user := CurrentUser(r)
+  if user == nil {
+    return permissions.FromString("")
+  }
+  return user.Permissions()
 }
 
 func (h *Handler) apiPrefix(s string) string {
