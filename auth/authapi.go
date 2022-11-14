@@ -53,16 +53,23 @@ func (h *Handler) RequireAuth(httpHandler http.Handler) http.Handler {
 // See also RequirePermissionFunc.
 func (h *Handler) RequirePermission(httpHandler http.Handler, perm permissions.Permission) http.Handler {
   return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
+    currentUser := CurrentUser(r)
+    username := "(no current user)"
+    if currentUser != nil {
+      username = currentUser.Id()
+    }
     tokenKey := cookieValue(r, h.config.TokenCookieName)
     idstr := clientIdString(r)
     token, valid := currentToken(tokenKey, idstr);
     if !valid {
       // No token, or token is not valid
+      glog.V(2).Infof("No token or token is not valid for user %q", username)
       http.Error(w, "Not authenticated", http.StatusUnauthorized)
       return
     }
     if perm != permissions.NoPermission {
       if !CurrentUserHasPermission(r, perm) {
+        glog.V(2).Infof("Not authorizes: user %q does not have permission %q", username, perm)
         http.Error(w, "Not authorized", http.StatusUnauthorized)
         return
       }
