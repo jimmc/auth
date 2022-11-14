@@ -69,7 +69,7 @@ func (h *Handler) RequirePermission(httpHandler http.Handler, perm permissions.P
     }
     if perm != permissions.NoPermission {
       if !CurrentUserHasPermission(r, perm) {
-        glog.V(2).Infof("Not authorizes: user %q does not have permission %q", username, perm)
+        glog.V(2).Infof("Not authorized: user %q does not have permission %q", username, perm)
         http.Error(w, "Not authorized", http.StatusUnauthorized)
         return
       }
@@ -208,4 +208,36 @@ func cookieValue(r *http.Request, cookieName string) string {
     return ""
   }
   return cookie.Value
+}
+
+// AddTokenCookie adds a cookie to the request to make us be logged in, for testing.
+func AddTokenCookieForTesting(r *http.Request, config *Config) error {
+  config = fillConfigDefaults(config)
+  user := CurrentUser(r)
+  if user==nil {
+    return fmt.Errorf("No user in request")
+  }
+  idstr := clientIdString(r)
+  token := newToken(user, idstr, config.TokenTimeoutDuration, config.TokenExpiryDuration)
+  c := token.cookie(config.TokenCookieName)
+  r.AddCookie(c)
+  return nil
+}
+
+// fillConfigDefaults fills in the config with default values,
+// or returns a new config if nil is passed in.
+func fillConfigDefaults(config *Config) *Config {
+  if config == nil {
+    config = &Config{}
+  }
+  if config.TokenTimeoutDuration == 0 {
+    config.TokenTimeoutDuration = defaultTokenTimeoutDuration
+  }
+  if config.TokenExpiryDuration == 0 {
+    config.TokenExpiryDuration = defaultTokenExpiryDuration
+  }
+  if config.TokenCookieName == "" {
+    config.TokenCookieName = "test_cookie"
+  }
+  return config
 }
